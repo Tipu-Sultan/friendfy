@@ -1,0 +1,58 @@
+import dbConnect from "@/lib/db";
+import UserModel from "@/models/UserModel";
+import generateToken from "@/utils/generateToken";
+import { sendEmail } from "@/utils/sendEmail";
+const bcrypt = require("bcryptjs");
+
+
+export async function POST(req) {
+    try {
+        await dbConnect();
+        const { username, email, password } = await req.json();
+
+        if (!username || !email || !password) {
+            return new Response(JSON.stringify({ error: "All fields are required" }), { status: 400 });
+        }
+
+        if (password.length < 8) {
+            return new Response(JSON.stringify({ error: "Password must be at least 8 characters" }), { status: 400 });
+        }
+
+        const userExists = await UserModel.findOne({ $or: [{ username }, { email }] });
+        if (userExists) {
+            return new Response(JSON.stringify({ error: "Username or email already taken" }), { status: 400 });
+        }
+
+        // Generate a verification token
+        const verificationToken = generateToken();
+
+        // Construct verification URL
+        const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+        // Send verification email
+        const emailResponse = await sendEmail(email, username, verificationUrl);
+
+        if (!emailResponse.success) {
+            return new Response(JSON.stringify({ error: "Failed to send verification email" }), { status: 500 });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(password, salt);
+
+        const newUser = new UserModel({
+            username,
+            email,
+            password:hashPassword,
+            isVerified: false,
+            verificationToken
+        });
+
+        await newUser.save();
+
+        return new Response(JSON.stringify({ message: "User registered successfully. Please check your email to verify your account." }), {
+            status: 201,
+        });
+    } catch (error) {
+        return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+    }
+}
