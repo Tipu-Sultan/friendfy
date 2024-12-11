@@ -5,82 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Image as LuImage, Smile, Video, XCircle } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { createPost, setPostFormData } from "@/redux/slices/postSlice";
-import useAuthData from "@/hooks/useAuthData";
-import Image  from 'next/image';
+import Image from 'next/image';
+import usePosts from "@/hooks/usePosts";
+import { Progress } from "../ui/progress";
 
 
 export default function AddPostSection() {
-  const dispatch = useDispatch();
-  const { user } = useAuthData();
-  const { content, file, contentType } = useSelector(
-    (state) => state.posts.postFormData
-  );
-  const { isLoading } = useSelector((state) => state.posts);
-  const [selectedMedia, setSelectedMedia] = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(null);
+  const {
+    isLoading,
+    content,
+    contentType,
+    mediaPreview,
+    selectedMedia,
+    uploadProgress,
+    handleContentChange,
+    handleRemoveMedia,
+    handleMediaChange,
+    handlePostSubmit,
+  } = usePosts();
 
-  // Handle content change
-  const handleContentChange = (e) => {
-    dispatch(setPostFormData({ content: e.target.value }));
-  };
-
-  // Handle media file change
-  const handleMediaChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const fileType = file.type; 
-      setSelectedMedia(file);
-      setMediaPreview(URL.createObjectURL(file)); 
-      dispatch(
-        setPostFormData({
-          file: {
-            name: file.name,
-            type: fileType,
-            size: file.size,
-          },
-          contentType: fileType,
-        })
-      );
-    }
-  };
-
-  // Remove selected media
-  const handleRemoveMedia = () => {
-    setSelectedMedia(null);
-    setMediaPreview(null);
-    dispatch(setPostFormData({ file: null, contentType: null }));
-  };
-
-  // Submit the post
-  const handlePostSubmit = async (e) => {
-    e.preventDefault();
-  
-    if (!content && !selectedMedia) {
-      alert("Please provide content or select a media file.");
-      return;
-    }
-  
-    try {
-      const formData = new FormData();
-      formData.append("content", content);
-      if (selectedMedia) {
-        formData.append("file", selectedMedia); // Attach media file
-        formData.append("contentType", contentType); // Attach content type
-      }
-      formData.append("userId", user?._id);
-  
-      await dispatch(createPost(formData)).unwrap(); 
-
-      setSelectedMedia(null);
-      dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
-    } catch (error) {
-      console.error("Error submitting post:", error.message);
-      alert("Failed to create post. Please try again.");
-    }
-  };
-  
 
   return (
     <Card className="mb-6">
@@ -120,6 +63,12 @@ export default function AddPostSection() {
               </button>
             </div>
           )}
+          {uploadProgress > 0 && (
+            <div className="my-2">
+              <Progress value={uploadProgress} />
+            </div>
+          )}
+
           <div className="flex items-center justify-between space-x-4">
             <div className="flex space-x-4">
               {/* Image Upload Button */}
@@ -136,7 +85,7 @@ export default function AddPostSection() {
                   className="hidden"
                   aria-label="Upload Image"
                 />
-                {content?.length +'/400'}
+                {content?.length + '/400'}
               </div>
 
               {/* Video Upload Button */}
@@ -165,7 +114,7 @@ export default function AddPostSection() {
             </div>
             {/* Post Button */}
             <Button disabled={!(selectedMedia || content) || isLoading} type="submit" className="px-6 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 rounded-lg shadow-lg">
-              {isLoading ? "Posting..." : "Post"}
+              {isLoading === 'createPost' ? "Posting..." : "Post"}
             </Button>
           </div>
         </form>

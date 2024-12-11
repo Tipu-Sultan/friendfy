@@ -2,18 +2,19 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import useAuthData from "@/hooks/useAuthData";
-import useSocket from "@/hooks/useSocket";
 import useFetchFriends from "@/hooks/useFetchFriends";
 import useFollowSocket from "@/hooks/useFollowSocket"; // Import custom hook
 import FollowButton from '@/components/home/FollowButton';
+import Link from "next/link";
+import { useSocket } from "../socketContext";
 
 
 export default function FriendSuggestions() {
-  const socket = useSocket();
+
   const { user } = useAuthData();
   const { suggestedFriends } = useFetchFriends();
 
-  useFollowSocket(socket);
+  useFollowSocket();
 
   return (
     <Card>
@@ -30,21 +31,23 @@ export default function FriendSuggestions() {
                   key={suggestion.username}
                   className="flex items-center justify-between p-2"
                 >
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage
-                        src={suggestion?.profilePicture}
-                        alt={suggestion.username}
-                      />
-                      <AvatarFallback>{suggestion.username}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{suggestion.username}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {suggestion.username}
-                      </p>
+                  <Link href={`/profile/${suggestion?.username}`}>
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarImage
+                          src={suggestion?.profilePicture}
+                          alt={suggestion.username}
+                        />
+                        <AvatarFallback>{suggestion.username}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{suggestion.username}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {suggestion.username}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
 
                   <FollowButton suggestion={suggestion} user={user} />
                 </div>
@@ -62,13 +65,15 @@ export default function FriendSuggestions() {
                   className="min-w-[100px] flex-shrink-0 p-4 border rounded-md transition"
                 >
                   <div className="flex flex-col items-center space-y-2">
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage
-                        src={suggestion?.profilePicture}
-                        alt={suggestion.username}
-                      />
-                      <AvatarFallback>{suggestion.username}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/profile/${suggestion?.username}`}>
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage
+                          src={suggestion?.profilePicture}
+                          alt={suggestion.username}
+                        />
+                        <AvatarFallback>{suggestion.username}</AvatarFallback>
+                      </Avatar>
+                    </Link>
                     <div className="text-center">
                       <p className="font-medium">{suggestion.username}</p>
                       <p className="text-sm text-muted-foreground">

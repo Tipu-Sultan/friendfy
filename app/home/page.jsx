@@ -1,28 +1,46 @@
+'use client';
 import AddPostSection from '@/components/home/AddPostSection';
 import FriendSuggestions from '@/components/home/FriendSuggestions';
-import FriendsCarousel from '@/components/FriendSuggestion/FriendsCarousel';
 import PostCard from '@/components/home/PostCard';
-import dbConnect from '@/lib/db';
-import Post from '@/models/PostModel';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSelector } from 'react-redux';
 
-
-const Home = async () => {
-  await dbConnect()
-  const posts = await Post?.find()
-    ?.populate('user', 'username profilePicture')
-    ?.lean();
+const Home = () => {
+  const { posts, isLoading } = useSelector((state) => state.posts);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 xl:max-w-2xl mx-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Left Section */}
+      <div className="lg:col-span-2 max-w-[500px] min-w-[400px] mx-auto">
+        {/* Add Post Section */}
         <AddPostSection />
+
+        {/* Friend Suggestions for Mobile */}
         <div className="lg:hidden md:block py-2">
           <FriendSuggestions />
         </div>
-        {posts?.reverse()?.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+
+        {/* Posts Section */}
+        {isLoading==='fetchPosts' ? (
+          // Skeletons for loading state
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="mb-4">
+              <Skeleton className="h-6 w-1/3 mb-2" /> 
+              <Skeleton className="h-44 w-full" />
+              <div className="flex space-x-2 mt-2">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+          ))
+        ) : (
+          [...posts]?.reverse().map((post) => (
+            <PostCard key={post._id} post={post} isLoading={isLoading} />
+          ))
+        )}
       </div>
+
+      {/* Right Sidebar */}
       <div className="hidden lg:block">
         <div className="sticky top-20">
           <FriendSuggestions />
@@ -30,6 +48,6 @@ const Home = async () => {
       </div>
     </div>
   );
-}
+};
 
-export default Home
+export default Home;

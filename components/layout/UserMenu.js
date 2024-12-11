@@ -13,17 +13,16 @@ import { User, Settings, LogOut } from 'lucide-react';
 import {logoutUser } from '@/redux/slices/authSlice';
 import Image from 'next/image';
 import useAuthData from '@/hooks/useAuthData';
-import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 
 
 export default function UserMenu() {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useAuthData();
+  const { isAuthenticated,user } = useAuthData();
 
   const handleLogout = async () => {
-    await dispatch(logoutUser())
-    window.location.href = '/auth/login'
+    dispatch(logoutUser())
+    window.location.href = '/login'
   }
 
   return (
@@ -42,7 +41,7 @@ export default function UserMenu() {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <Link href="/profile">
+            <Link href={`/profile/${user?.username}`}>
               <DropdownMenuItem className="cursor-pointer">
                 <User className="w-4 h-4 mr-3" />
                 Profile

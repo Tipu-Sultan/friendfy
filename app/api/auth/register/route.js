@@ -1,7 +1,7 @@
 import dbConnect from "@/lib/db";
 import UserModel from "@/models/UserModel";
 import generateToken from "@/utils/generateToken";
-import { sendEmail } from "@/utils/sendEmail";
+import { sendVerificationEmail } from "../../../../utils/sendEmail";
 const bcrypt = require("bcryptjs");
 
 
@@ -27,22 +27,22 @@ export async function POST(req) {
         const verificationToken = generateToken();
 
         // Construct verification URL
-        const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        // const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
-        // Send verification email
-        const emailResponse = await sendEmail(email, username, verificationUrl);
+        // // Send verification email
+        // const emailResponse = await sendVerificationEmail(email, username, verificationUrl);
 
-        if (!emailResponse.success) {
-            return new Response(JSON.stringify({ error: "Failed to send verification email" }), { status: 500 });
-        }
+        // if (!emailResponse.success) {
+        //     return new Response(JSON.stringify({ error: "Failed to send verification email" }), { status: 500 });
+        // }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashPassword = await bcrypt.hash(password, salt);
+        // const salt = await bcrypt.genSalt(10);
+        // const hashPassword = await bcrypt.hash(password, salt);
 
         const newUser = new UserModel({
             username,
             email,
-            password:hashPassword,
+            password,
             isVerified: false,
             verificationToken
         });

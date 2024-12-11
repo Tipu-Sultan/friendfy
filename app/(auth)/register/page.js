@@ -33,7 +33,7 @@ export default function Register() {
     try {
       // If no validation errors, proceed with dispatch
       dispatch(registerUser(userFormData));
-      setClientError(isNull)
+      setClientError(null)
     } catch (error) {
       console.log(error);
     }
@@ -136,8 +136,8 @@ export default function Register() {
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (
+        <Button type="submit" className="w-full" disabled={loading==='registerUser'}>
+          {loading==='registerUser' ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating account...
@@ -151,7 +151,7 @@ export default function Register() {
       <div className="mt-4 text-center text-sm">
         <span className="text-muted-foreground">Already have an account? </span>
         <Link
-          href="/auth/login"
+          href="/login"
           className="text-primary hover:underline font-medium"
         >
           Sign in

@@ -9,9 +9,10 @@ import { Search, UserPlus, UserMinus, Users, Handshake } from 'lucide-react';
 import useFollowStatus from '@/hooks/useFollowStatus';
 import useAuthData from '@/hooks/useAuthData';
 import useFetchFriends from "@/hooks/useFetchFriends";
-import useSocket from '@/hooks/useSocket';
 import FollowButton from '@/components/home/FollowButton';
 import useFollowSocket from '@/hooks/useFollowSocket';
+import Link from 'next/link';
+import { useSocket } from '@/components/socketContext';
 
 export default function Friends() {
   const socket = useSocket();
@@ -34,7 +35,7 @@ export default function Friends() {
   // Find users who are suggested (not already in followers or following)
   const suggestions = suggestedFriends.filter(
     (suggestion) =>
-      suggestion?.follows?.status !== "confirmed" && 
+      suggestion?.follows?.status !== "confirmed" || suggestion?.follows?.status === "requested"&& 
       suggestion?.follows?.userId !== user?._id &&
       suggestion?.follows?.targetUserId !== user?._id
   );
@@ -98,6 +99,7 @@ export default function Friends() {
             {followers?.map((follower) => (
               <Card key={follower._id} className="p-4">
                 <div className="flex items-center justify-between">
+                <Link href={`/profile/${follower?.username}`}>
                   <div className="flex items-center space-x-4">
                     <img
                       src={follower.profilePicture}
@@ -111,6 +113,7 @@ export default function Friends() {
                       </p>
                     </div>
                   </div>
+                  </Link>
                   <FollowButton
                     suggestion={follower}
                     user={user}
@@ -126,6 +129,7 @@ export default function Friends() {
             {following?.map((follow) => (
               <Card key={follow._id} className="p-4">
                 <div className="flex items-center justify-between">
+                <Link href={`/profile/${follow?.username}`}>
                   <div className="flex items-center space-x-4">
                     <img
                       src={follow.profilePicture}
@@ -139,6 +143,7 @@ export default function Friends() {
                       </p>
                     </div>
                   </div>
+                  </Link>
                   <FollowButton
                     suggestion={follow}
                     user={user}
@@ -154,6 +159,7 @@ export default function Friends() {
             {suggestions.map((suggestion) => (
               <Card key={suggestion._id} className="p-4">
                 <div className="flex items-center justify-between">
+                <Link href={`/profile/${suggestion?.username}`}>
                   <div className="flex items-center space-x-4">
                     <img
                       src={suggestion.profilePicture}
@@ -167,7 +173,11 @@ export default function Friends() {
                       </p>
                     </div>
                   </div>
-                  <Button>Follow</Button>
+                  </Link>
+                  <FollowButton
+                    suggestion={suggestion}
+                    user={user}
+                  />
                 </div>
               </Card>
             ))}
@@ -179,6 +189,7 @@ export default function Friends() {
             {requested?.map((suggestion) => (
               <Card key={suggestion._id} className="p-4">
                 <div className="flex items-center justify-between">
+                <Link href={`/profile/${suggestion?.username}`}>
                   <div className="flex items-center space-x-4">
                     <img
                       src={suggestion.profilePicture}
@@ -192,7 +203,11 @@ export default function Friends() {
                       </p>
                     </div>
                   </div>
-                  <Button>Follow</Button>
+                  </Link>
+                  <FollowButton
+                    suggestion={suggestion}
+                    user={user}
+                  />
                 </div>
               </Card>
             ))}

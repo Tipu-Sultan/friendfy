@@ -5,6 +5,7 @@ import { ReduxProvider } from "@/redux/ReduxProvider";
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
+import { SocketProvider } from "@/components/socketContext";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,12 +14,14 @@ export const metadata = {
   description: 'A modern social media application',
 };
 
-export default function RootLayout({ children,params }) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <ReduxProvider>
+        <SocketProvider>
+
           <div className="min-h-screen bg-background">
             <Sidebar />
             <Topbar />
@@ -29,6 +32,8 @@ export default function RootLayout({ children,params }) {
             </main>
             <MobileNav />
           </div>
+          </SocketProvider>
+
         </ReduxProvider>
         </ThemeProvider>
       </body>

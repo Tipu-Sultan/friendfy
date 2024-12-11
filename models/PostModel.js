@@ -21,6 +21,6 @@ postSchema.pre("save", function (next) {
 });
 
 // Ensure that the model is only created once during server startup
-const Post = mongoose.models.Post || mongoose.model("Post", postSchema);
+const Post = mongoose?.models?.Post || mongoose?.model("Post", postSchema);
 
 export default Post;

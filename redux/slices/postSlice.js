@@ -16,11 +16,23 @@ export const createPost = createAsyncThunk(
   }
 );
 
+export const deletePost = createAsyncThunk(
+  "posts/deletePost",
+  async (postId, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(`/api/post/index/${postId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data || "Something went wrong.");
+    }
+  }
+);
+
 export const likeOrUnlikePost = createAsyncThunk(
   "posts/likeOrUnlikePost ",
-  async ({postId,userID}, { rejectWithValue }) => {
+  async ({postId,userId}, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/post/index", postId,userID);
+      const response = await axios.post("/api/post/like", { postId, userId });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data || "Something went wrong.");
@@ -48,7 +60,7 @@ const initialState = {
     file: null,
     contentType: "text/plain",
   },
-  isLoading: false,
+  isLoading: null,
   error: null,
 };
 
@@ -63,13 +75,38 @@ const postSlice = createSlice({
     resetPostFormData: (state) => {
       state.postFormData = { content: "", mediaFile: null, contentType: "text/plain" };
     },
+
+    updateLikeIntoPost: (state, action) => {
+      const { userId, postId } = action.payload;
+    
+      state.posts = state.posts.map((post) =>
+        post._id === postId
+          ? {
+              ...post, // Ensure other properties of the post are retained
+              likes: post.likes.includes(userId)
+                ? post.likes.filter((id) => id !== userId) 
+                : [...post.likes, userId], 
+            }
+          : post
+      );
+    },
+
+    addNewPost(state, action) {
+      state.posts.push(action.payload); // Add new post to the top
+    },
+
+    updateDeletePost(state, action) {
+      const { postId } = action.payload;
+      state.posts = state.posts.filter(post => post._id !== postId); // Remove post by ID
+    },
+    
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchPosts.pending, (state) => {
-        state.isLoading = true;
+        state.isLoading = 'fetchPosts';
       })
-      .addCase(fetchPosts.fulfilled, (state) => {
+      .addCase(fetchPosts.fulfilled, (state,action) => {
         state.isLoading = false;
         state.error = null;
         state.posts = action.payload.posts;
@@ -80,12 +117,11 @@ const postSlice = createSlice({
       })
 
       .addCase(likeOrUnlikePost.pending, (state) => {
-        state.isLoading = true;
+        state.isLoading = 'likeOrUnlikePost';
       })
-      .addCase(likeOrUnlikePost.fulfilled, (state) => {
+      .addCase(likeOrUnlikePost.fulfilled, (state,action) => {
         state.isLoading = false;
         state.error = null;
-        state.posts = action.payload.posts;
       })
       .addCase(likeOrUnlikePost.rejected, (state, action) => {
         state.isLoading = false;
@@ -93,7 +129,7 @@ const postSlice = createSlice({
       })
 
       .addCase(createPost.pending, (state) => {
-        state.isLoading = true;
+        state.isLoading = 'createPost';
       })
       .addCase(createPost.fulfilled, (state) => {
         state.isLoading = false;
@@ -103,9 +139,21 @@ const postSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      .addCase(deletePost.pending, (state) => {
+        state.isLoading = 'deletePost';
+      })
+      .addCase(deletePost.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(deletePost.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
       ;
   },
 });
 
-export const { setPostFormData, resetPostFormData } = postSlice.actions;
+export const { setPostFormData, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost } = postSlice.actions;
 export default postSlice.reducer;

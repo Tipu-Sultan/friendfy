@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Post from "@/models/PostModel";
 import { uploadMedia } from "@/utils/uploadMedia"; // Adjust the path based on your project structure
+import User from "@/models/UserModel";
 
 export const POST = async (req) => {
   try {
@@ -46,6 +47,15 @@ export const POST = async (req) => {
     // Connect to the database
     await dbConnect();
 
+    // Fetch user details
+    const user = await User.findById(userId).select("username profilePicture");
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found." },
+        { status: 404 }
+      );
+    }
+
     // Save the post in the database
     const post = new Post({
       user: userId,
@@ -55,10 +65,29 @@ export const POST = async (req) => {
     });
     await post.save();
 
+    // Format the response to include enriched user information
+    const responsePost = {
+      _id: post._id,
+      user: {
+        _id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+      },
+      content: post.content,
+      mediaUrl: post.mediaUrl,
+      contentType: post.contentType,
+      likes: post.likes || [],
+      comments: post.comments || [],
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      __v: post.__v,
+    };
+
     return NextResponse.json(
       {
+        status: 201,
         message: "Post created successfully!",
-        post,
+        post: responsePost,
         mediaDetails: mediaDetails || "No media file uploaded.",
       },
       { status: 201 }
@@ -78,7 +107,9 @@ export const GET = async () => {
     await dbConnect();
 
     // Fetch all posts, sorting by creation date (newest first)
-    const posts = await Post.find()
+    const posts = await Post?.find()
+    ?.populate('user', 'username profilePicture')
+    ?.lean();
 
     // Return the posts as JSON
     return NextResponse.json(

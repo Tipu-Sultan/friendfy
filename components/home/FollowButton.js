@@ -4,23 +4,29 @@ import { CheckCircle, X } from "lucide-react";
 import useFollowStatus from '@/hooks/useFollowStatus';
 import { acceptFollowRequest, removeFollowRequest, sendFollowRequest } from "@/redux/slices/FollowSlice";
 import { useDispatch } from "react-redux";
-
+import { useSocket } from '../socketContext';
 
 
 const FollowButton = ({suggestion,user}) => {
+    const privateSocket = useSocket();
+
     const dispatch = useDispatch();
 
     const { isFollowed, isRequested } = useFollowStatus();
 
     const handleFollowRequest = (userId, targetUserId) => {
+        privateSocket?.emit("follow-request", { userId, targetUserId });
         dispatch(sendFollowRequest({ userId, targetUserId }));
       };
     
       const handleUnfollow = (userId, targetUserId) => {
+        privateSocket?.emit("follow-request-delete", { userId, targetUserId });
         dispatch(removeFollowRequest({ userId, targetUserId }));
       };
     
       const handleAcceptFollowRequest = (userId, targetUserId) => {
+        privateSocket?.emit("follow-accept", { userId, targetUserId });
+
         dispatch(acceptFollowRequest({ userId, targetUserId }));
       };
 

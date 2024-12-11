@@ -1,18 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import io from "socket.io-client";
 
-// Initialize Socket.IO connection
-const socket = io("http://localhost:3000");
 
 // Thunks for async actions
 export const sendFollowRequest = createAsyncThunk(
     "follow/sendFollowRequest",
     async ({ userId, targetUserId }, { rejectWithValue }) => {
         try {
-            // Emit the follow request through Socket.IO for real-time sync
-            socket.emit("follow-request", { userId, targetUserId });
-
             // Send a POST request to the backend API to save the follow request
             const response = await axios.post("/api/follow/index", { userId, targetUserId });
 
@@ -28,9 +22,6 @@ export const removeFollowRequest = createAsyncThunk(
     "follow/removeFollowRequest",
     async ({ userId, targetUserId }, { rejectWithValue }) => {
         try {
-            // Emit the follow request deletion through Socket.IO for real-time sync
-            socket.emit("follow-request-delete", { userId, targetUserId });
-
             // Send a DELETE request to the backend API to remove the follow request
             const response = await axios.delete("/api/follow/index", {
                 data: { userId, targetUserId },
@@ -54,7 +45,6 @@ export const acceptFollowRequest = createAsyncThunk(
     "follow/acceptFollowRequest",
     async ({ userId, targetUserId }, { rejectWithValue }) => {
         try {
-            socket.emit("follow-accept", { userId, targetUserId });
             const response = await axios.put("/api/follow/index", { userId, targetUserId });
             return response.data;
         } catch (error) {
@@ -93,7 +83,7 @@ const followSlice = createSlice({
         updateFollowStatus: (state, action) => {
             const { userId, targetUserId, status } = action.payload;
 
-            state.suggestedFriends = state.suggestedFriends.map((friend) =>
+            state.suggestedFriends = state?.suggestedFriends?.map((friend) =>
                 friend._id === targetUserId || friend._id === userId
                     ? { ...friend, follows: { userId, targetUserId, status } }
                     : friend
@@ -115,7 +105,7 @@ const followSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchSuggestedFrineds.pending, (state) => {
-                state.loading = 'fetch';
+                state.loading = 'fetchfriends';
                 state.error = null;
             })
             .addCase(fetchSuggestedFrineds.fulfilled, (state, action) => {

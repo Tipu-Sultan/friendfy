@@ -1,10 +1,13 @@
-import { useSelector } from 'react-redux';
 
-const useAuthData = () => {
-  const { user } = useSelector((state) => state.auth); // Access user from Redux store
-  const isAuthenticated = localStorage.getItem('authToken');
+const useAuthData = () => { 
+  // Retrieve authToken and userData from localStorage
+  const authToken = localStorage.getItem('authToken');
+  const userData = JSON.parse(localStorage.getItem('userData')); // Assuming userData is stored as JSON string
 
-  return { user, isAuthenticated };
-};
+  // Check if authToken exists to determine if the user is authenticated
+  const isAuthenticated = !!authToken && userData; 
+
+  return { user: userData, isAuthenticated }; 
+}; 
 
 export default useAuthData;

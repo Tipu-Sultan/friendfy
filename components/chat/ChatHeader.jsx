@@ -2,8 +2,16 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useDispatch } from 'react-redux';
+import { setSelectedUser } from '@/redux/slices/chatSlice';
+import { useRouter } from 'next/navigation';
 
-export default function ChatHeader({ selectedUser, isMobileView, setSelectedUser }) {
+export default function ChatHeader({ selectedUser, isMobileView}) {
+  const router = useRouter()
+  const handleBack = ()=>{
+    router.push(`/chat`);
+  }
+  const dispatch = useDispatch();
   return (
     <div className="p-4 border-b flex items-center justify-between">
       <div className="flex items-center space-x-3">
@@ -11,14 +19,17 @@ export default function ChatHeader({ selectedUser, isMobileView, setSelectedUser
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSelectedUser(null)}
+            onClick={() => {
+              dispatch(setSelectedUser(null))
+              handleBack();
+            }}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         )}
         <Avatar>
           <img
-            src={selectedUser.avatar}
+            src={selectedUser.profilePicture}
             alt={selectedUser.name}
             className="w-10 h-10 rounded-full"
           />

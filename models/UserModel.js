@@ -17,15 +17,29 @@ const userSchema = new mongoose.Schema(
     verificationToken: { type: String, default: "" },
     isVerified: { type: Boolean, default: false },
     otp: { type: String, default: "" },
+    passwordExpires: { type: Date, default: null },
     lastLogin: { type: String, default: "" },
     followersCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
+    recentChats: [
+      {
+        id: { type: mongoose.Schema.Types.ObjectId, required: true }, // Reference to group or user
+        groupId: {
+          type: String,
+          default:''
+        },
+        name: { type: String, default: '' }, // Group or user name
+        type: { type: String, enum: ['user', 'group'], required: true }, // Type of chat
+        profilePicture: { type: String, default: '' }, // Profile picture URL
+        lastMessage: { type: String, default: '' }, // Last message in the chat
+        updatedAt: { type: Date, default: Date.now }, // When the chat was last updated
+      },
+    ],
   },
   { timestamps: true }
 );
 
-const User = mongoose.models.User || mongoose.model("User", userSchema);
-
+// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
@@ -34,5 +48,7 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
+
+const User = mongoose?.models?.User || mongoose?.model("User", userSchema);
 
 module.exports = User;

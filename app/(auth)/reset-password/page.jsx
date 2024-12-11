@@ -8,41 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, setLoginDetails } from '@/redux/slices/authSlice';
+import { resetPassowrd, setResetDetails } from '@/redux/slices/authSlice';
 
 export default function Login() {
   const router = useRouter()
   const dispatch = useDispatch();
-  const { loading, error, status, loginFormData } = useSelector((state) => state.auth)
+  const { loading, error, status, resetFormData } = useSelector((state) => state.auth)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-        // Dispatch the login action and wait for the response or success
-        const response = await dispatch(loginUser(loginFormData)); 
-        console.log(response)
-        // Assuming the loginUser action returns a result or response that indicates success
-        if (response?.payload?.status === 'success') { 
-            router.push('/'); // Redirect after successful login
-        } else {
-            // Handle login failure (show a message or other actions)
-            console.log("Login failed:", response?.message || 'Unknown error');
-        }
+      const response = await dispatch(resetPassowrd(resetFormData)).unwrap();
+      if (response?.status === 200) {
+        router.push('/login');
+      }
     } catch (error) {
-        console.error("Error during login:", error);
+      console.error("Error during login:", error);
     }
-};
+  };
 
 
   const handleInputDetails = (key, value) => {
-    dispatch(setLoginDetails({ field: key, value }));
+    dispatch(setResetDetails({ field: key, value }));
   };
 
   return (
     <Card className="p-6">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold">Welcome back</h1>
+        <h1 className="text-2xl font-bold">Reset Your Pasword</h1>
         <p className="text-sm text-muted-foreground">
           Sign in to your account to continue
         </p>
@@ -50,18 +44,18 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">OTP</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              id="emailOrUsername"
-              name='emailOrUsername'
+              id="resetOtp"
+              name="resetOtp"
               type="text"
               placeholder="Enter your email"
               className="pl-10"
               required
-              value={loginFormData?.emailOrUsername}
-              onChange={(e) => handleInputDetails('emailOrUsername', e.target.value)}
+              value={resetFormData?.resetOtp}
+              onChange={(e) => handleInputDetails('resetOtp', e.target.value)}
             />
           </div>
         </div>
@@ -73,12 +67,29 @@ export default function Login() {
             <Input
               id="password"
               type="password"
-              name='password'
+              name="password"
               placeholder="Enter your password"
               className="pl-10"
               required
-              value={loginFormData?.password}
+              value={resetFormData?.password}
               onChange={(e) => handleInputDetails('password', e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmedPassword">Confirmed Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="confirmedPassword"
+              type="password"
+              name="confirmedPassword"
+              placeholder="Enter your confirmedPassword"
+              className="pl-10"
+              required
+              value={resetFormData?.confirmedPassword}
+              onChange={(e) => handleInputDetails('confirmedPassword', e.target.value)}
             />
           </div>
         </div>
@@ -93,28 +104,18 @@ export default function Login() {
           </p>
         )}
 
-
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (
+        <Button type="submit" className="w-full" disabled={loading==='resetPassowrd'}>
+          {loading==='resetPassowrd' ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
+              Reseting...
             </>
           ) : (
-            'Sign in'
+            'Reset Password'
           )}
         </Button>
       </form>
 
-      <div className="mt-4 text-center text-sm">
-        <span className="text-muted-foreground">{"Don't"} have an account? </span>
-        <Link
-          href="/auth/register"
-          className="text-primary hover:underline font-medium"
-        >
-          Sign up
-        </Link>
-      </div>
     </Card>
   );
 }

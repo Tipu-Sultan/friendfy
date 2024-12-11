@@ -1,23 +1,77 @@
-import { Button } from '@/components/ui/button';
+'use client';
+import { Button } from '@/components/ui/button'; 
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, MoreHorizontal, MoreVertical } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react';
 import Image from 'next/image';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useEffect } from 'react';
+import useAuthData from '@/hooks/useAuthData';
+import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
+import { useDispatch } from 'react-redux';
+import { useSocket } from '../socketContext';
+import { timeAgo } from '@/utils/timeAgo';
 
+export default function PostCard({ post, isLoading }) {
+  const privateSocket = useSocket();
+  const dispatch = useDispatch();
+  const { user } = useAuthData();
 
-export default function PostCard({ post }) {
-  
+  const handleLike = async () => {
+    if (!privateSocket) return;
+
+    privateSocket?.emit('like-post', { postId: post._id, userId: user._id });
+    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user?._id })).unwrap();
+  };
+
+  const handleDelete = async (postId) => {
+    if (!privateSocket) return;
+    const res = await dispatch(deletePost(postId)).unwrap();
+    if(res.status ===200){
+      privateSocket?.emit('delete-post', { postId: postId });
+
+    }    
+  };
+
+  useEffect(() => {
+    if (!privateSocket) return;
+
+    privateSocket?.on('post-liked', (data) => {
+      if (data?.postId === post._id) {
+        dispatch(updateLikeIntoPost({ postId: data.postId, userId: data.userId }));
+      }
+    });
+
+    privateSocket?.on('post-deleted', (data) => {
+      if (data?.postId) {
+        dispatch(updateDeletePost({ postId: data.postId })); // Dispatch action to remove post
+      }
+    });
+
+    return () => {
+      if (privateSocket) {
+        privateSocket?.off('post-liked');
+        privateSocket?.off('post-deleted');
+      }
+    };
+  }, [dispatch, privateSocket, post._id]);
+
   const renderMedia = () => {
     if (post?.contentType === 'image/jpeg' && post?.mediaUrl) {
       return (
         <div className="relative w-full max-h-80 overflow-hidden mb-4">
           <Image
             src={post?.mediaUrl}
-            className="rounded-lg"
-            width={500}
-            height={500}
-            alt={post?.mediaUrl}
+            alt="Preview"
+            className="w-full max-h-60 object-contain"
+            width={100}
+            height={100}
           />
         </div>
       );
@@ -45,7 +99,6 @@ export default function PostCard({ post }) {
               ?.join('<br />'),   // Join chunks with <br /> tags
           }}
         ></p>
-
       );
     }
 
@@ -53,7 +106,7 @@ export default function PostCard({ post }) {
   };
 
   return (
-    <Card className="mb-6 relative">
+    <Card className="mb-6 relative max-w-lg mx-auto sm:max-w-xl md:max-w-2xl">
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -66,25 +119,31 @@ export default function PostCard({ post }) {
                 height={40}
               />
             </Avatar>
-            <div>
-              <h3 className="font-semibold">{post?.user?.username}</h3>
-              <p className="text-sm text-muted-foreground">
-                {new Date(post?.createdAt).toLocaleString()}
-              </p>
+            <div className="truncate">
+              <h3 className="font-semibold text-sm md:text-base">{post?.user?.username}</h3>
+              <p className="text-xs text-muted-foreground">{timeAgo(post?.createdAt)}</p>
             </div>
           </div>
 
+          {/* Dropdown Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+            <DropdownMenuTrigger asChild className="focus:outline-none">
+              <Button variant="ghost" size="icon" >
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={5} className="z-50">
-              <DropdownMenuItem>View Profile</DropdownMenuItem>
-              <DropdownMenuItem>Clear Chat</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                Block User
+            <DropdownMenuContent
+              align="end"
+              className=""
+            >
+              <DropdownMenuItem >Edit</DropdownMenuItem>
+              <DropdownMenuItem >Report</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => handleDelete(post?._id)}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                {isLoading === 'deletePost' ? 'Deleting...' : 'Delete'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -93,18 +152,20 @@ export default function PostCard({ post }) {
         {/* Render media based on contentType */}
         {renderMedia()}
 
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" >
-            <Heart className="w-5 h-5 mr-2" />
-            {post?.likes?.length}
+        <div className="flex items-center justify-start space-x-4 mt-4">
+          <Button onClick={handleLike} variant="ghost" size="sm" className="flex items-center">
+            <Heart
+              className={`w-5 h-5 mr-2 ${post.likes.includes(user?._id) ? 'text-red-600' : ''}`}
+            />
+            <span className="text-xs sm:text-sm">{post?.likes?.length}</span>
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="flex items-center">
             <MessageCircle className="w-5 h-5 mr-2" />
-            {post?.comments?.length}
+            <span className="text-xs sm:text-sm">{post?.comments?.length}</span>
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="flex items-center">
             <Share2 className="w-5 h-5 mr-2" />
-            Share
+            <span className="text-xs sm:text-sm">Share</span>
           </Button>
         </div>
       </div>
