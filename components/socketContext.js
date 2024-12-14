@@ -9,7 +9,7 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuthData();
   const privateSocket = useMemo(() => {
     if (user) {
-      return io(process.env.CLIENT_URL, {
+      return io(process.env.SOCKET_URL, {
         query: {
           type: "private",
           userId: user._id,
