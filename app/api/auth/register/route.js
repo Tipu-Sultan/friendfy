@@ -27,17 +27,14 @@ export async function POST(req) {
         const verificationToken = generateToken();
 
         // Construct verification URL
-        // const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
-        // // Send verification email
-        // const emailResponse = await sendVerificationEmail(email, username, verificationUrl);
+        // Send verification email
+        const emailResponse = await sendVerificationEmail(email, username, verificationUrl);
 
-        // if (!emailResponse.success) {
-        //     return new Response(JSON.stringify({ error: "Failed to send verification email" }), { status: 500 });
-        // }
-
-        // const salt = await bcrypt.genSalt(10);
-        // const hashPassword = await bcrypt.hash(password, salt);
+        if (!emailResponse.success) {
+            return new Response(JSON.stringify({ error: "Failed to send verification email" }), { status: 500 });
+        }
 
         const newUser = new UserModel({
             username,

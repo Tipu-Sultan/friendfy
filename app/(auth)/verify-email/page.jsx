@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from 'next/navigation'; // For query params and navigation
+import { useParams, useRouter } from 'next/navigation'; // For query params and navigation
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function VerifyEmail() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token'); // Get the verification token from the URL
+  const {token} = useParams();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
