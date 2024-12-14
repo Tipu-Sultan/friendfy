@@ -2,7 +2,6 @@ import dbConnect from "@/lib/db"; // Database connection
 import UserModel from "@/models/UserModel"; // User model
 import bcrypt from "bcryptjs"; // For password comparison
 import jwt from "jsonwebtoken"; // For generating JWT";
-import { createSession } from "../../../../utils/server-only";
 
 export async function POST(req) {
   try {
@@ -62,7 +61,9 @@ export async function POST(req) {
     }
 
     // Generate JWT
-    const token = await createSession(user._id)
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "5h",
+    });
 
     // Set token in cookies using `Set-Cookie` header
     return new Response(
