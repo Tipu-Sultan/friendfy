@@ -15,7 +15,7 @@ app.prepare().then(() => {
     const httpServer = createServer(handler);
     const io = new Server(httpServer, {
         cors: {
-            origin: dev ? "http://localhost:3000" : "https://friendfy.vercel.app",
+            origin: dev ? "http://localhost:3000" : "https://friendfy.vercel.app/api/socket",
             methods: ["GET", "POST"],
         },
     });
