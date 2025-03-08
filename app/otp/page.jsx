@@ -1,9 +1,10 @@
-import LoginForm from '@/components/auth/LoginForm'
+import React from 'react'
+import OTP from './otp'
 
 const page = () => {
   return (
     <div>
-      <LoginForm/>
+        <OTP/>
     </div>
   )
 }

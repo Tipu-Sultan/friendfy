@@ -1,10 +1,10 @@
-import React from 'react'
-import Home from '@/app/home/page'
+import Home from '@/components/home/Home'
+import {getPosts} from '@/utils/getPosts'
+
+
 const page = () => {
   return (
-    <div>
       <Home/>
-    </div>
   )
 }
 

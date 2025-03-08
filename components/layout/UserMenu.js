@@ -10,24 +10,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar } from '@/components/ui/avatar';
 import { User, Settings, LogOut } from 'lucide-react';
-import {logoutUser } from '@/redux/slices/authSlice';
 import Image from 'next/image';
-import useAuthData from '@/hooks/useAuthData';
-import { useDispatch } from 'react-redux';
+import { useUser } from '../../hooks/useUser';
+import { signOut } from 'next-auth/react';
 
 
 export default function UserMenu() {
-  const dispatch = useDispatch();
-  const { isAuthenticated,user } = useAuthData();
+  const { user } = useUser();
 
-  const handleLogout = async () => {
-    dispatch(logoutUser())
-    window.location.href = '/login'
-  }
+  const SignOut = () => {
+        signOut({ callbackUrl: "/login" }); // Redirect to login page after logout
+      };
 
   return (
     <>
-      {isAuthenticated &&
+      {user &&
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Avatar className="cursor-pointer">
@@ -56,7 +53,7 @@ export default function UserMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer text-destructive focus:text-destructive"
-              onClick={handleLogout}
+              onClick={SignOut}
             >
               <LogOut className="w-4 h-4 mr-3" />
               Logout

@@ -1,20 +1,17 @@
 "use client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import useAuthData from "@/hooks/useAuthData";
 import useFetchFriends from "@/hooks/useFetchFriends";
-import useFollowSocket from "@/hooks/useFollowSocket"; // Import custom hook
 import FollowButton from '@/components/home/FollowButton';
 import Link from "next/link";
-import { useSocket } from "../socketContext";
+import { useUser } from "@/hooks/useUser";
 
 
 export default function FriendSuggestions() {
 
-  const { user } = useAuthData();
+  const { user, } = useUser
+  ();
   const { suggestedFriends } = useFetchFriends();
-
-  useFollowSocket();
 
   return (
     <Card>

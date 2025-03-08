@@ -15,11 +15,12 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import useAuthData from '@/hooks/useAuthData';
 import { useState } from 'react';
+import { useUser } from '../../hooks/useUser';
+import { signOut } from 'next-auth/react';
 
 export default function MobileNav() {
-  const { user } = useAuthData();
+  const { user} = useUser();
   const pathname = usePathname();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -36,6 +37,9 @@ export default function MobileNav() {
   ];
 
   const closeSheet = () => setIsSheetOpen(false);
+  const SignOut = () => {
+      signOut({ callbackUrl: "/login" }); // Redirect to login page after logout
+    };
 
   const renderMenuItem = ({ icon: Icon, label, path }) => (
     <Link
@@ -79,7 +83,7 @@ export default function MobileNav() {
             <div className="py-4 space-y-4">
               {menuItems.map(renderMenuItem)}
               <button
-                onClick={closeSheet}
+                onClick={SignOut}
                 className="flex items-center w-full text-left text-red-600 text-sm font-medium hover:underline"
               >
                 <LogOut className="w-4 h-4 mr-2" />

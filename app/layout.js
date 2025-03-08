@@ -5,7 +5,7 @@ import { ReduxProvider } from "@/redux/ReduxProvider";
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
-import { SocketProvider } from "@/components/socketContext";
+import ClientProvider from './ClientProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,8 +20,8 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <ReduxProvider>
-        <SocketProvider>
-
+        <ClientProvider
+        >
           <div className="min-h-screen bg-background">
             <Sidebar />
             <Topbar />
@@ -32,8 +32,7 @@ export default function RootLayout({ children }) {
             </main>
             <MobileNav />
           </div>
-          </SocketProvider>
-
+          </ClientProvider>
         </ReduxProvider>
         </ThemeProvider>
       </body>

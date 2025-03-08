@@ -1,39 +1,48 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateFollowStatus, removeFollowStatus } from "@/redux/slices/FollowSlice";
-import { useSocket } from "@/components/socketContext";
 
-const useFollowSocket = () => {
-  const privateSocket = useSocket();
+const useFollowSocket = (channel,ablyClient) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (!privateSocket) return;
+    if (!ablyClient) return;
 
-    privateSocket?.on("follow-request-sent", ({ userId, targetUserId }) => {
+
+    const handleFollowRequestSent = ({ data }) => {
+      const { userId, targetUserId } = data;
       dispatch(updateFollowStatus({ userId, targetUserId, status: "requested" }));
-    });
-
-    privateSocket?.on("follow-request-received", ({ userId, targetUserId }) => {
-      dispatch(updateFollowStatus({ userId, targetUserId, status: "requested" }));
-    });
-
-    privateSocket?.on("follow-update", ({ userId, targetUserId, status }) => {
-      dispatch(updateFollowStatus({ userId, targetUserId, status }));
-    });
-
-    privateSocket?.on("follow-request-deleted", ({ userId, targetUserId }) => {
-      dispatch(removeFollowStatus({ userId, targetUserId }));
-    });
-
-    // Clean up the socket listeners on unmount
-    return () => {
-      privateSocket.off("follow-request-sent");
-      privateSocket.off("follow-request-received");
-      privateSocket.off("follow-update");
-      privateSocket.off("follow-request-deleted");
     };
-  }, [dispatch, privateSocket]);
+
+    const handleFollowRequestReceived = ({ data }) => {
+      const { userId, targetUserId } = data;
+      dispatch(updateFollowStatus({ userId, targetUserId, status: "requested" }));
+    };
+
+    const handleFollowUpdate = ({ data }) => {
+      const { userId, targetUserId, status } = data;
+      dispatch(updateFollowStatus({ userId, targetUserId, status }));
+    };
+
+    const handleFollowRequestDeleted = ({ data }) => {
+      const { userId, targetUserId } = data;
+      dispatch(removeFollowStatus({ userId, targetUserId }));
+    };
+
+    // Subscribe to Ably events
+    channel.subscribe("follow-request-sent", handleFollowRequestSent);
+    channel.subscribe("follow-request-received", handleFollowRequestReceived);
+    channel.subscribe("follow-update", handleFollowUpdate);
+    channel.subscribe("follow-request-deleted", handleFollowRequestDeleted);
+
+    return () => {
+      // Unsubscribe when component unmounts
+      channel.unsubscribe("follow-request-sent", handleFollowRequestSent);
+      channel.unsubscribe("follow-request-received", handleFollowRequestReceived);
+      channel.unsubscribe("follow-update", handleFollowUpdate);
+      channel.unsubscribe("follow-request-deleted", handleFollowRequestDeleted);
+    };
+  }, [ablyClient, dispatch]);
 };
 
 export default useFollowSocket;

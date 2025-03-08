@@ -1,5 +1,5 @@
 'use client'
-import { use, useEffect } from 'react';
+import { use } from 'react';
 import UserList from '@/components/chat/UserList';
 import ChatHeader from '@/components/chat/ChatHeader';
 import ChatMessages from '@/components/chat/ChatMessages';
@@ -7,19 +7,18 @@ import ChatInput from '@/components/chat/ChatInput';
 import EmptyChat from '@/components/chat/EmptyChat';
 import { Card } from '@/components/ui/card';
 import { useUserList } from '@/hooks/useUserList';
-import useAuthData from '@/hooks/useAuthData';
 import useDynamicView from '@/hooks/useDynamicView';
 import { useSelector } from 'react-redux';
 import { useChat } from '@/hooks/useChats';
-import { useSocket } from '../../../components/socketContext';
+import { useUser } from '@/hooks/useUser';
+import { getAblyClient } from '@/lib/ablyClient';
 
 
 export default function Chat({ params }) {
-    const privateSocket = useSocket();
     const { username } = use(params);
+    const { user} = useUser();
+    const {ablyClient} = getAblyClient(user?.id);
     const isMobileView = useDynamicView();
-    const { user } = useAuthData()
-
     const {
         groupData,
         groupName,
@@ -41,8 +40,8 @@ export default function Chat({ params }) {
         isModalOpen, 
         setIsModalOpen,
         updateGroup,
-    } = useUserList(user, username,privateSocket)
-    const {loadMessages,handleMessageSend, setContent, content} = useChat(user, username,privateSocket)
+    } = useUserList(user, username,ablyClient)
+    const {loadMessages,handleMessageSend, setContent, content} = useChat(user)
 
     const { messages, recentChats,selectedUser,chatLoading } = useSelector((state) => state.chat)
 
@@ -52,6 +51,7 @@ export default function Chat({ params }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
             <UserList
+            authData={user}
                 isMobileView={isMobileView}
                 username={username}
                 filteredUsers={filteredUsers}
@@ -88,7 +88,7 @@ export default function Chat({ params }) {
                             currentUser={user}
                             selectedUser={selectedUser}
                             messages={messages}
-                            privateSocket={privateSocket}
+                            privateSocket={ablyClient}
                             chatLoading={chatLoading}
                         />
                         <ChatInput 

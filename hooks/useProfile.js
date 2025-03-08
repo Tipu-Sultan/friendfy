@@ -2,11 +2,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { fetchUsersDetails } from '../redux/slices/authSlice'; // Replace with actual slice import
 import { addRecentChat, createUser } from '../redux/slices/chatSlice'; // Replace with actual slice import
-import useAuthData from './useAuthData'; // Replace with actual hook path
 import { useRouter } from 'next/navigation';
+import { useUser } from './useUser';
 
 export const useProfile = (username) => {
-  const { user } = useAuthData();
+  const { user} = useUser();
+
   const router = useRouter();
   const dispatch = useDispatch();
 

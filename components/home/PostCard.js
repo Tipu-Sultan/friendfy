@@ -12,58 +12,81 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useEffect } from 'react';
-import useAuthData from '@/hooks/useAuthData';
 import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
 import { useDispatch } from 'react-redux';
-import { useSocket } from '../socketContext';
 import { timeAgo } from '@/utils/timeAgo';
+import useAbly from '@/lib/useAbly';
+import { useUser } from '@/hooks/useUser';
 
 export default function PostCard({ post, isLoading }) {
-  const privateSocket = useSocket();
   const dispatch = useDispatch();
-  const { user } = useAuthData();
+  const { user } = useUser();
+  const {ablyClient} = useAbly();
+
+  const publishEvent = (eventName, data) => {
+    if (!ablyClient) {
+      console.error("Ably client is not connected yet");
+      return;
+    }
+  
+    const channel = ablyClient.channels.get("post-actions");
+    channel.publish(eventName, data, (err) => {
+      if (err) console.error("Error publishing event:", err);
+      else console.log(`Event "${eventName}" published successfully`);
+    });
+  };
+  const fileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
 
   const handleLike = async () => {
-    if (!privateSocket) return;
+    if (!ablyClient) return; // Ensure Ably client is initialized
 
-    privateSocket?.emit('like-post', { postId: post._id, userId: user._id });
-    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user?._id })).unwrap();
+    // Emit the like event to Ably
+    publishEvent("like-post", { postId: post?._id, userId: user?._id })
+    // Dispatch like action
+    await dispatch(likeOrUnlikePost({ postId: post?._id, userId: user?._id })).unwrap();
   };
 
   const handleDelete = async (postId) => {
-    if (!privateSocket) return;
-    const res = await dispatch(deletePost(postId)).unwrap();
-    if(res.status ===200){
-      privateSocket?.emit('delete-post', { postId: postId });
+    if (!ablyClient) return; // Ensure Ably client is initialized
 
-    }    
+    // Dispatch delete action
+    const res = await dispatch(deletePost(postId)).unwrap();
+    if (res.status === 200) {
+      // Emit the delete event to Ably
+      ablyClient.channels.get("post-actions").publish("delete-post", { postId: postId });
+    }
   };
 
   useEffect(() => {
-    if (!privateSocket) return;
+    if (!ablyClient) return;
 
-    privateSocket?.on('post-liked', (data) => {
+
+    const channel = ablyClient.channels.get("post-actions");
+    
+    // Listen for the post-liked event from Ably
+    channel.subscribe("like-post", (data) => {
       if (data?.postId === post._id) {
         dispatch(updateLikeIntoPost({ postId: data.postId, userId: data.userId }));
       }
     });
 
-    privateSocket?.on('post-deleted', (data) => {
-      if (data?.postId) {
-        dispatch(updateDeletePost({ postId: data.postId })); // Dispatch action to remove post
+    // Listen for the post-deleted event from Ably
+    channel.subscribe("post-deleted", (data) => {
+      if (data?.postId === post._id) {
+        dispatch(updateDeletePost({ postId: data.postId }));
       }
     });
 
+    // Clean up listeners when the component unmounts
     return () => {
-      if (privateSocket) {
-        privateSocket?.off('post-liked');
-        privateSocket?.off('post-deleted');
-      }
+      channel.unsubscribe("post-liked");
+      channel.unsubscribe("post-deleted");
     };
-  }, [dispatch, privateSocket, post._id]);
+  }, [dispatch, ablyClient, post._id]);
 
   const renderMedia = () => {
-    if (post?.contentType === 'image/jpeg' && post?.mediaUrl) {
+    if (fileTypes.includes(post?.contentType) && post?.mediaUrl) {
       return (
         <div className="relative w-full max-h-80 overflow-hidden mb-4">
           <Image

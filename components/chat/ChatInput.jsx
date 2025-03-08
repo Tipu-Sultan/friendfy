@@ -24,7 +24,7 @@ export default function ChatInput({ selectedUser, user,handleMessageSend}) {
       if (e.shiftKey) return; // Allow Shift + Enter for new lines
       e.preventDefault();
       if (content.trim() !== '') {
-        handleMessageSend(user?._id, selectedUser?.id,selectedUser?.type);
+        handleMessageSend(user?.id, selectedUser?.id,selectedUser?.type);
         dispatch(setContent(''));
         textareaRef.current.style.height = 'auto'; // Reset height
       }

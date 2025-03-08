@@ -9,8 +9,7 @@ import {
   Menu,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import useAuthData from "@/hooks/useAuthData";
+import { usePathname, useRouter } from "next/navigation";
 import { logoutUser } from "@/redux/slices/authSlice";
 import { useDispatch } from "react-redux";
 import {
@@ -20,19 +19,16 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useUser } from "../../hooks/useUser";
+import { signOut } from "next-auth/react";
 
 export default function Sidebar() {
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useAuthData();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { user} = useUser();
   const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
 
   const pathname = usePathname();
 
-  const handleLogout = async () => {
-    dispatch(logoutUser());
-    window.location.href = "/login";
-  };
+  
 
   const menuItems = [
     { icon: Home, label: "Home", path: "/" },
@@ -40,6 +36,10 @@ export default function Sidebar() {
     { icon: Users, label: "Friends", path: "/friends" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
+
+  const SignOut = () => {
+    signOut({ callbackUrl: "/login" }); // Redirect to login page after logout
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen bg-card fixed left-0 top-0 border-r">
@@ -99,9 +99,9 @@ export default function Sidebar() {
       </Sheet>
 
       <div className="p-4 border-t">
-        {isAuthenticated ? (
+        {user ? (
           <button
-            onClick={handleLogout}
+            onClick={SignOut}
             className="flex items-center w-full px-4 py-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5 mr-3" />

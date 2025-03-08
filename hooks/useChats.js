@@ -6,9 +6,9 @@ import {
   setContent,
 } from "../redux/slices/chatSlice";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import useAuthData from "./useAuthData";
+import { getAblyClient } from "@/lib/ablyClient";
 
-export const useChat = (user, username, privateSocket) => {
+export const useChat = (user) => {
   const dispatch = useDispatch();
   const { recentChats, messages, selectedUser, chatLoading, error, content } = useSelector((state) => state.chat);
   const [contentType, setContentType] = useState('');
@@ -16,11 +16,18 @@ export const useChat = (user, username, privateSocket) => {
   const stableSelectedUser = useMemo(() => selectedUser, [selectedUser]);
   const stableUser = useMemo(() => user, [user]);
 
+  const client = getAblyClient(stableUser?.id || null);
+  const channelName =
+  stableSelectedUser?.type === "group"
+      ? stableSelectedUser.id
+      : [stableUser?.id, stableSelectedUser?.id].sort().join("-");
+  const chatChannel = client?.channels?.get(channelName);
+
   const handleMessageSend = (sender, receiver, type) => {
     const tempId = crypto.randomBytes(6).toString("hex").toUpperCase(); // Generate a temporary unique ID
 
     const senderType = type === 'group' ? {
-      _id: user._id,
+      _id: stableUser?.id,
       username: user?.username,
       profilePicture: user?.profilePicture,
     } : sender;
@@ -61,13 +68,8 @@ export const useChat = (user, username, privateSocket) => {
       payload: { message: reduxPayload },
     });
 
-    if (type === 'user' && privateSocket && privateSocket.connected) {
-      privateSocket.emit("privateMessage", reduxPayload);
-    }
+    chatChannel?.publish("new-message", reduxPayload);
 
-    if (type === 'group' && privateSocket && privateSocket.connected) {
-      privateSocket?.emit("groupMessage", reduxPayload);
-    }
 
     // Send the message to the server (Assuming sendMessages handles the API call)
     dispatch(sendMessages(messagePayload));
@@ -87,58 +89,24 @@ export const useChat = (user, username, privateSocket) => {
   // Automatically fetch messages for selected user
   useEffect(() => {
     if (stableSelectedUser?.id && stableSelectedUser?.type) {
-      loadMessages(stableUser._id, stableSelectedUser.id, stableSelectedUser.type);
+      loadMessages(stableUser?.id, stableSelectedUser.id, stableSelectedUser.type);
     }
   }, [loadMessages, stableSelectedUser]);
 
   // Listen for message acknowledgments and delivery
   useEffect(() => {
-    if (privateSocket) {
-      privateSocket?.on("messageSent", (data) => {
-        dispatch({
-          type: "chat/updateMessageStatus",
-          payload: { tempId: data.tempId, status: data.status },
-        });
-      });
+    if (!chatChannel) return;
 
-      privateSocket?.on("messageReceived", (message) => {
-        if (selectedUser && selectedUser.id === message?.sender) {
-          dispatch({
-            type: "chat/addMessage",
-            payload: { message },
-          });
-        }
-      });
+    const handleIncomingMessage = (message) => {
+      dispatch({ type: "chat/addMessage", payload: { message: message.data } });
+    };
 
-      return () => {
-        privateSocket?.off("messageSent");
-        privateSocket?.off("messageReceived");
-      };
-    }
-  }, [dispatch, privateSocket, selectedUser]);
+    chatChannel.subscribe("new-message", handleIncomingMessage);
 
-  useEffect(() => {
-    if (privateSocket) {
-      privateSocket?.on("groupMessageSent", (data) => {
-        dispatch({
-          type: "chat/updateMessageStatus",
-          payload: { tempId: data.tempId, status: data.status },
-        });
-      });
-
-      privateSocket?.on("groupMessageReceived", (message) => {
-        dispatch({
-          type: "chat/addMessage",
-          payload: { message },
-        });
-      });
-
-      return () => {
-        privateSocket?.off("groupMessageSent");
-        privateSocket?.off("groupMessageReceived");
-      };
-    }
-  }, [privateSocket, dispatch]);
+    return () => {
+      chatChannel.unsubscribe("new-message", handleIncomingMessage);
+    };
+  }, [chatChannel, dispatch]);
 
   return {
     recentChats,

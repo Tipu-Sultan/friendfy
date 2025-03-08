@@ -1,13 +1,22 @@
-'use client';
+'use client'
 import AddPostSection from '@/components/home/AddPostSection';
 import FriendSuggestions from '@/components/home/FriendSuggestions';
 import PostCard from '@/components/home/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSelector } from 'react-redux';
+import { fetchPosts, setPosts } from '@/redux/slices/postSlice';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
-const Home = () => {
-  const { posts, isLoading } = useSelector((state) => state.posts);
 
+const Home = ({posts}) => {
+    const { reduxPost} = useSelector((state) => state.posts);
+    const dispatch = useDispatch();
+  // Fetch posts on initial load
+    useEffect(() => {
+      if (reduxPost.length === 0) {
+        dispatch(fetchPosts());
+      }
+    }, [dispatch, reduxPost.length]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Left Section */}
@@ -21,11 +30,11 @@ const Home = () => {
         </div>
 
         {/* Posts Section */}
-        {isLoading==='fetchPosts' ? (
+        {reduxPost.length<0? (
           // Skeletons for loading state
           Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="mb-4">
-              <Skeleton className="h-6 w-1/3 mb-2" /> 
+              <Skeleton className="h-6 w-1/3 mb-2" />
               <Skeleton className="h-44 w-full" />
               <div className="flex space-x-2 mt-2">
                 <Skeleton className="h-6 w-20" />
@@ -34,8 +43,8 @@ const Home = () => {
             </div>
           ))
         ) : (
-          [...posts]?.reverse().map((post) => (
-            <PostCard key={post._id} post={post} isLoading={isLoading} />
+          [...reduxPost]?.reverse().map((post) => (
+            <PostCard key={post._id} post={post} />
           ))
         )}
       </div>

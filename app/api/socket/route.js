@@ -1,23 +1,31 @@
-import { Server } from "socket.io";
+import Ably from "ably";
 
-export  function GET(req, res) {
-    if (!res.socket.server.io) {
-        console.log("Initializing Socket.IO server...");
-        const io = new Server(res.socket.server, {
-            cors: {
-                origin: "https://friendfy.vercel.app",
-                methods: ["GET", "POST"],
-            },
-        });
+export async function GET(req) {
+  const ablyApiKey = process.env.ABLY_API_KEY; // Ensure API key is in .env
+  if (!ablyApiKey) {
+    return Response.json(
+      { success: false, message: "ABLY_API_KEY is not set" },
+      { status: 500 }
+    );
+  }
 
-        io.on("connection", (socket) => {
-            console.log("New client connected", socket.id);
-            socket.on("disconnect", () => {
-                console.log("Client disconnected", socket.id);
-            });
-        });
+  try {
+    const client = new Ably.Rest(ablyApiKey);
+    const tokenParams = { capability: '{"*":["publish", "subscribe"]}' };
 
-        res.socket.server.io = io;
-    }
-    res.end();
+    const tokenRequest = await new Promise((resolve, reject) => {
+      client.auth.createTokenRequest(tokenParams, (err, tokenRequest) => {
+        if (err) reject(err);
+        else resolve(tokenRequest);
+      });
+    });
+
+    return Response.json({ success: true, tokenRequest }, { status: 200 });
+  } catch (error) {
+    console.error("Error generating Ably token:", error);
+    return Response.json(
+      { success: false, message: "Failed to generate Ably token" },
+      { status: 500 }
+    );
+  }
 }

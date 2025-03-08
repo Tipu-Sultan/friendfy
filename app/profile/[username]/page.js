@@ -7,10 +7,10 @@ import { Grid, Image, Users, Bookmark, LetterText } from 'lucide-react';
 import { use } from 'react';
 import RenderMedia from '@/components/RenderMedia'
 import {useProfile} from '@/hooks/useProfile'
-import useAuthData from '@/hooks/useAuthData';
+import { useUser } from '@/hooks/useUser';
 
 export default function Profile({ params }) {
-  const {user} = useAuthData()
+  const { user } = useUser();
   const { username } = use(params);
   const { chatLoading, error, profileData, handleMessageClick } = useProfile(username);
   return (

@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, MoreVertical } from 'lucide-react';
 import { timeAgo } from '@/utils/timeAgo';
 import CreateGroup from '@/components/ui-modols/CreateGroup'
-import useAuthData from '@/hooks/useAuthData';
 import { Skeleton } from '../ui/skeleton';
 import {
   DropdownMenu,
@@ -27,9 +26,9 @@ export default function UserList({
   groupUsers, setGroupUsers,
   loadMessages,handleSelectedUsers,
   handleGroupSettings,groupData,
-  isModalOpen,setIsModalOpen,updateGroup
+  isModalOpen,setIsModalOpen,updateGroup,
+  authData
 }) {
-  const { user } = useAuthData()
   
 
   
@@ -76,7 +75,7 @@ export default function UserList({
                     onClick={() => {
                       if (selectedUser?.id !== recentUser?.id) {
                         handleSelectedUsers(recentUser);
-                        loadMessages(user._id, recentUser.id, recentUser?.type);
+                        loadMessages(authData._id, recentUser.id, recentUser?.type);
                       }
                     }}
                     className="flex-1 flex items-center space-x-3 cursor-pointer"

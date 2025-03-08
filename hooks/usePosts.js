@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewPost, createPost, fetchPosts, setPostFormData } from '@/redux/slices/postSlice';
-import { useSocket } from "@/components/socketContext";
-import useAuthData from "./useAuthData";
+import { addNewPost, createPost, fetchPosts, setPostFormData } from "@/redux/slices/postSlice";
+import { useUser } from "./useUser";
+import { getAblyClient } from "@/lib/ablyClient";
 
 const usePosts = () => {
   const dispatch = useDispatch();
-  const { user } = useAuthData();
-  const privateSocket = useSocket();
-  const { posts, isLoading, postFormData } = useSelector((state) => state.posts);
+  const { user } = useUser();
+  const { reduxPost, isLoading, postFormData } = useSelector((state) => state.posts);
   const { content, contentType } = postFormData;
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
+
+  // Ably client and channel initialization
+  const client = getAblyClient(user?.id || null);
+  const channelName = "new-posts-channel";
+  const postChannel = client?.channels?.get(channelName);
 
   // Handle content change
   const handleContentChange = (e) => {
@@ -23,17 +27,13 @@ const usePosts = () => {
   const handleMediaChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const fileType = file.type;
       setSelectedMedia(file);
       setMediaPreview(URL.createObjectURL(file));
+
       dispatch(
         setPostFormData({
-          file: {
-            name: file.name,
-            type: fileType,
-            size: file.size,
-          },
-          contentType: fileType,
+          file: file,
+          contentType: file.type,
         })
       );
     }
@@ -43,7 +43,7 @@ const usePosts = () => {
   const handleRemoveMedia = () => {
     setSelectedMedia(null);
     setMediaPreview(null);
-    dispatch(setPostFormData({ file: null, contentType: null }));
+    dispatch(setPostFormData({ file: null, contentType: "" }));
   };
 
   // Submit the post
@@ -60,20 +60,25 @@ const usePosts = () => {
       const formData = new FormData();
       formData.append("content", content);
       if (selectedMedia) {
-        formData.append("file", selectedMedia); // Attach media file
-        formData.append("contentType", contentType); // Attach content type
+        formData.append("file", selectedMedia);
+        formData.append("contentType", contentType);
       }
-      formData.append("userId", user?._id);
+      formData.append("userId", user?.id);
 
+      // Send the post creation request
       const res = await dispatch(createPost(formData)).unwrap();
 
       if (res.status === 201) {
         const newPost = res.post;
-        privateSocket?.emit("new-post", { userId: user._id, post: newPost }); // Broadcast
+
+        // Broadcast new post via Ably
+        postChannel?.publish("new-post", newPost);
+
         setUploadProgress(100); // Complete upload progress
-        setTimeout(() => setUploadProgress(0), 500); // Reset progress after a short delay
+        setTimeout(() => setUploadProgress(0), 500); // Reset progress after short delay
       }
 
+      // Reset form
       setSelectedMedia(null);
       setMediaPreview(null);
       dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
@@ -84,21 +89,23 @@ const usePosts = () => {
     }
   };
 
-  useEffect(() => {
-    if (posts.length === 0) {
-      dispatch(fetchPosts());
-    }
-  }, [dispatch, posts.length]);
+  
 
+  // Subscribe to Ably channel for real-time updates
   useEffect(() => {
-    privateSocket?.on('receive-post', (newPost) => {
-      dispatch(addNewPost(newPost)); // Add the new post to the Redux store
-    });
+    if (!postChannel) return;
+
+    const handleReceivePost = (message) => {
+      const newPost = message.data;
+      dispatch(addNewPost(newPost)); // Add new post to Redux store
+    };
+
+    postChannel.subscribe("new-post", handleReceivePost);
 
     return () => {
-      privateSocket?.off('receive-post'); // Cleanup listener on unmount
+      postChannel.unsubscribe("new-post", handleReceivePost);
     };
-  }, [privateSocket, dispatch]);
+  }, [postChannel, dispatch]);
 
   return {
     isLoading,

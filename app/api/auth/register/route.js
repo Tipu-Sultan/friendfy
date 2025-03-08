@@ -2,7 +2,6 @@ import dbConnect from "@/lib/db";
 import UserModel from "@/models/UserModel";
 import generateToken from "@/utils/generateToken";
 import { sendVerificationEmail } from "../../../../utils/sendEmail";
-const bcrypt = require("bcryptjs");
 
 
 export async function POST(req) {

@@ -7,44 +7,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search, UserPlus, UserMinus, Users, Handshake } from 'lucide-react';
 import useFollowStatus from '@/hooks/useFollowStatus';
-import useAuthData from '@/hooks/useAuthData';
 import useFetchFriends from "@/hooks/useFetchFriends";
 import FollowButton from '@/components/home/FollowButton';
 import useFollowSocket from '@/hooks/useFollowSocket';
 import Link from 'next/link';
-import { useSocket } from '@/components/socketContext';
+import { useUser } from '@/hooks/useUser';
 
 export default function Friends() {
-  const socket = useSocket();
-  const { user } = useAuthData();
+  const { user } = useUser();
+
   const { suggestedFriends } = useFetchFriends();
-  useFollowSocket(socket);
   const [activeTab, setActiveTab] = useState('followers');
 
 
   // Find users you are following (where userId === user._id)
   const following = suggestedFriends.filter(
-    (follow) => follow?.follows?.userId === user?._id && follow?.follows?.status === "confirmed"
+    (follow) => follow?.follows?.userId === user?.id && follow?.follows?.status === "confirmed"
   );
 
   // Find users who are following you (where targetUserId === user._id)
   const followers = suggestedFriends.filter(
-    (follow) => follow?.follows?.targetUserId === user?._id && follow?.follows?.status === "confirmed"
+    (follow) => follow?.follows?.targetUserId === user?.id && follow?.follows?.status === "confirmed"
   );
 
   // Find users who are suggested (not already in followers or following)
   const suggestions = suggestedFriends.filter(
     (suggestion) =>
       suggestion?.follows?.status !== "confirmed" || suggestion?.follows?.status === "requested"&& 
-      suggestion?.follows?.userId !== user?._id &&
-      suggestion?.follows?.targetUserId !== user?._id
+      suggestion?.follows?.userId !== user?.id &&
+      suggestion?.follows?.targetUserId !== user?.id
   );
 
   // Find users who have requested to follow you but you haven't confirmed yet
   const requested = suggestedFriends.filter(
     (request) => 
       request?.follows?.status === "requested" &&
-      request?.follows?.targetUserId === user?._id
+      request?.follows?.targetUserId === user?.id
   );
 
 

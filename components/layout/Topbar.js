@@ -1,8 +1,4 @@
-"use client";
-
 import { Bell, Search } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Avatar } from '@/components/ui/avatar';
 import UserMenu from './UserMenu';
 import ThemeToggle from './ThemeToggle';
 

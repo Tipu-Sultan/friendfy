@@ -53,8 +53,9 @@ export const fetchPosts = createAsyncThunk(
 );
 
 // Initial state
+
 const initialState = {
-  posts: [],
+  reduxPost: [],
   postFormData: {
     content: "",
     file: null,
@@ -79,7 +80,7 @@ const postSlice = createSlice({
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
     
-      state.posts = state.posts.map((post) =>
+      state.reduxPost = state.reduxPost.map((post) =>
         post._id === postId
           ? {
               ...post, // Ensure other properties of the post are retained
@@ -92,30 +93,22 @@ const postSlice = createSlice({
     },
 
     addNewPost(state, action) {
-      state.posts.push(action.payload); // Add new post to the top
+      state.reduxPost.push(action.payload); 
+    },
+
+    setPosts(state, action) {
+      state.reduxPost = action.payload; 
     },
 
     updateDeletePost(state, action) {
       const { postId } = action.payload;
-      state.posts = state.posts.filter(post => post._id !== postId); // Remove post by ID
+      state.reduxPost = state.reduxPost.filter(post => post._id !== postId); // Remove post by ID
     },
     
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchPosts.pending, (state) => {
-        state.isLoading = 'fetchPosts';
-      })
-      .addCase(fetchPosts.fulfilled, (state,action) => {
-        state.isLoading = false;
-        state.error = null;
-        state.posts = action.payload.posts;
-      })
-      .addCase(fetchPosts.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-
+      
       .addCase(likeOrUnlikePost.pending, (state) => {
         state.isLoading = 'likeOrUnlikePost';
       })
@@ -124,6 +117,19 @@ const postSlice = createSlice({
         state.error = null;
       })
       .addCase(likeOrUnlikePost.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(fetchPosts.pending, (state) => {
+        state.isLoading = 'fetchPosts';
+      })
+      .addCase(fetchPosts.fulfilled, (state,action) => {
+        state.isLoading = false;
+        state.error = null;
+        state.reduxPost = action.payload.posts;
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
@@ -155,5 +161,5 @@ const postSlice = createSlice({
   },
 });
 
-export const { setPostFormData, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost } = postSlice.actions;
+export const { setPostFormData, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost,setPosts } = postSlice.actions;
 export default postSlice.reducer;

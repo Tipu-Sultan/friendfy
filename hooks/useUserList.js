@@ -1,3 +1,4 @@
+'use client'
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRecentChats, fetchFriends, createGroup, setSelectedUser, joinGroup, getGroupDetails } from "../redux/slices/chatSlice";
 import { useEffect, useState } from "react";

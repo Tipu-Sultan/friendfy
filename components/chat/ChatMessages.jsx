@@ -3,16 +3,17 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { MoreVertical } from 'lucide-react'; // Assuming you're using Lucide icons
 import { timeAgo } from '@/utils/timeAgo';
 import { useEffect, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Skeleton } from '../ui/skeleton';
-import { setPrivateSocket } from '@/redux/slices/authSlice';
 
-export default function ChatMessages({ messages, chatLoading, selectedUser, currentUser,privateSocket }) {
+export default function ChatMessages({chatLoading, selectedUser, currentUser,privateSocket }) {
+  const dispatch = useDispatch()
+  const {messages } = useSelector((state) => state.chat);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(5);
   const endOfMessagesRef = useRef(null);
   const chatContainerRef = useRef(null);
-  const dispatch = useDispatch();
 
   const handleDelete = (msgId,senderId,isSender) => {
     privateSocket?.emit("delete-message", {msgId,isSender});
@@ -31,7 +32,7 @@ export default function ChatMessages({ messages, chatLoading, selectedUser, curr
       const nextPage = currentPage + 1;
       const res = await dispatch(
         fetchPaginationsMessages({
-          sender: currentUser?._id,
+          sender: currentUser?.id,
           receiver: selectedUser?.id,
           page: nextPage,
         })
@@ -55,7 +56,7 @@ export default function ChatMessages({ messages, chatLoading, selectedUser, curr
 
   const filteredMessages = messages.filter((message) => {
     const senderDetails = selectedUser?.type === 'group' ? message?.sender : null;
-    const isSender = senderDetails?._id === currentUser?._id || message?.sender === currentUser?._id;
+    const isSender = senderDetails?._id === currentUser?.id || message?.sender === currentUser?.id;
     // Filter out messages deleted by the receiver if the current user is not the sender
     if (!isSender && message?.deletedByReceiver) return false;
     // Filter out messages deleted by the sender for all users
@@ -86,7 +87,7 @@ export default function ChatMessages({ messages, chatLoading, selectedUser, curr
         : filteredMessages?.map((message, i) => {
             const senderDetails = selectedUser?.type === 'group' ? message?.sender : null;
             const senderId = selectedUser?.type === 'group' ? message?.sender?._id : message?.sender ;
-            const isSender = senderDetails?._id === currentUser?._id || message?.sender === currentUser?._id;
+            const isSender = senderDetails?._id === currentUser?.id || message?.sender === currentUser?.id;
             const isPending = message?.status === 'pending';
             const isFailed = message?.status === 'failed';
 
