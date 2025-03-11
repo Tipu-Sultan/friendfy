@@ -3,11 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { addNewPost, createPost, fetchPosts, setPostFormData } from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
+import { revalidatePath } from "next/cache";
 
 const usePosts = () => {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const { reduxPost, isLoading, postFormData } = useSelector((state) => state.posts);
+  const { posts, isLoading, postFormData } = useSelector((state) => state.posts);
   const { content, contentType } = postFormData;
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
@@ -79,6 +80,7 @@ const usePosts = () => {
       }
 
       // Reset form
+      revalidatePath("/");
       setSelectedMedia(null);
       setMediaPreview(null);
       dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
@@ -108,6 +110,7 @@ const usePosts = () => {
   }, [postChannel, dispatch]);
 
   return {
+    posts,
     isLoading,
     content,
     contentType,

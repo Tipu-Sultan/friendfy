@@ -9,8 +9,7 @@ import { useUser } from "@/hooks/useUser";
 
 export default function FriendSuggestions() {
 
-  const { user, } = useUser
-  ();
+  const { user, } = useUser();
   const { suggestedFriends } = useFetchFriends();
 
   return (

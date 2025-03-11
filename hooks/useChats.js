@@ -4,14 +4,20 @@ import {
   fetchMessages,
   sendMessages,
   setContent,
+  deleteMessage, 
+  updateDeleteMessage
 } from "../redux/slices/chatSlice";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { getAblyClient } from "@/lib/ablyClient";
+import { current } from "@reduxjs/toolkit";
 
 export const useChat = (user) => {
   const dispatch = useDispatch();
   const { recentChats, messages, selectedUser, chatLoading, error, content } = useSelector((state) => state.chat);
   const [contentType, setContentType] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingUsers, setTypingUsers] = useState([]);
+  
 
   const stableSelectedUser = useMemo(() => selectedUser, [selectedUser]);
   const stableUser = useMemo(() => user, [user]);
@@ -22,6 +28,18 @@ export const useChat = (user) => {
       ? stableSelectedUser.id
       : [stableUser?.id, stableSelectedUser?.id].sort().join("-");
   const chatChannel = client?.channels?.get(channelName);
+
+
+  const sendTypingEvent = (isTyping) => {
+    chatChannel.publish("typing", {
+      userId: stableSelectedUser?.id,
+      currentUser: stableUser?.id, 
+      userName: stableUser?.username, // Send name for group typing
+      isTyping 
+    });
+  };
+  
+
 
   const handleMessageSend = (sender, receiver, type) => {
     const tempId = crypto.randomBytes(6).toString("hex").toUpperCase(); // Generate a temporary unique ID
@@ -108,12 +126,60 @@ export const useChat = (user) => {
     };
   }, [chatChannel, dispatch]);
 
+   const handleMsgDelete = (msgId, senderId, isSender) => {
+      chatChannel?.publish("message-deleted", { msgId, isSender });
+      dispatch(deleteMessage({ msgId, senderId, isSender,type: stableSelectedUser?.type }));
+    };
+
+    const handleTyping = (message) => {
+      const { userId,currentUser, userName, isTyping } = message.data;
+    
+      if (stableSelectedUser?.type === "user" && userId === stableUser?.id) {
+        // Private Chat: Only one user can be typing
+          setIsTyping(isTyping);
+        
+      } else if (stableSelectedUser?.type === "group" && userId !== currentUser) {
+        // Group Chat: Maintain an array of typing users
+        setTypingUsers((prev) => {
+          if (isTyping) {
+            return prev.includes(userName) ? prev : [...prev, userName]; // Add user if not already in the list
+          } else {
+            return prev.filter((name) => name !== userName); // Remove user when they stop typing
+          }
+        });
+      }
+    };
+  
+    useEffect(() => {
+      if (!chatChannel) return;
+
+    const handleDeleteMessage = (message) => {
+      dispatch(updateDeleteMessage({ msgId:message.data.msgId, isSender:message.data.isSender }));
+    };
+
+    chatChannel.subscribe("message-deleted", handleDeleteMessage);
+    chatChannel.subscribe("typing", handleTyping);
+
+
+    return () => {
+      chatChannel.unsubscribe("message-deleted", handleDeleteMessage);
+      chatChannel.unsubscribe("typing", handleTyping);
+
+    };
+    }, [dispatch, chatChannel]);
+    
+
   return {
     recentChats,
     messages,
     chatLoading,
     error,
+    typingUsers,
+    isTyping, 
+    setIsTyping,
     loadMessages,
     handleMessageSend,
+    handleMsgDelete,
+    sendTypingEvent,
   };
 };

@@ -163,17 +163,18 @@ export const sendMessages = (messagePayload) => async (dispatch) => {
 
 export const deleteMessage = createAsyncThunk(
   "chat/deleteMessage",
-  async ({msgId,senderId,isSender}, { rejectWithValue }) => {
+  async ({ msgId, senderId, isSender, type }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`/api/chat/group/index/${msgId}`, {senderId,isSender});
-      return response.data; // Return the created group data
+      // Determine API endpoint based on type
+      const endpoint = type === "group" ? `/api/chat/group/index/${msgId}` : `/api/chat/user/index/${msgId}`;
+
+      const response = await axios.post(endpoint, { senderId, isSender, type });
+      return response.data; // Return the updated message data
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Failed to create group");
+      return rejectWithValue(error.response?.data || "Failed to delete message");
     }
   }
 );
-
-
 
 
 // Slice definition

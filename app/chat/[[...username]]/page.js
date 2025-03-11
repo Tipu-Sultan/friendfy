@@ -41,7 +41,9 @@ export default function Chat({ params }) {
         setIsModalOpen,
         updateGroup,
     } = useUserList(user, username,ablyClient)
-    const {loadMessages,handleMessageSend, setContent, content} = useChat(user)
+    const {
+        loadMessages,handleMessageSend, setContent, 
+        content,handleMsgDelete,sendTypingEvent,typingUsers,isTyping, setIsTyping} = useChat(user)
 
     const { messages, recentChats,selectedUser,chatLoading } = useSelector((state) => state.chat)
 
@@ -82,8 +84,9 @@ export default function Chat({ params }) {
             <div className={`md:col-span-2 lg:col-span-3 ${!selectedUser && isMobileView ? 'hidden' : 'block'} overflow-y-auto`}>
                 {selectedUser ? (
                     <Card className="h-full flex flex-col">
-                        <ChatHeader selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
+                        <ChatHeader typingUsers={typingUsers} isTyping={isTyping}  selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
                         <ChatMessages
+                        handleMsgDelete={handleMsgDelete}
                             loadMessages={loadMessages}
                             currentUser={user}
                             selectedUser={selectedUser}
@@ -92,8 +95,11 @@ export default function Chat({ params }) {
                             chatLoading={chatLoading}
                         />
                         <ChatInput 
+                        sendTypingEvent={sendTypingEvent}
                         selectedUser={selectedUser}
                          user={user}
+                         isTyping={isTyping} 
+                         setIsTyping={setIsTyping}
                          handleMessageSend={handleMessageSend}
                          setContent={setContent}
                          content={content}

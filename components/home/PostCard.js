@@ -15,13 +15,13 @@ import { useEffect } from 'react';
 import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
 import { useDispatch } from 'react-redux';
 import { timeAgo } from '@/utils/timeAgo';
-import useAbly from '@/lib/useAbly';
 import { useUser } from '@/hooks/useUser';
+import { getAblyClient } from '@/lib/ablyClient';
 
 export default function PostCard({ post, isLoading }) {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const {ablyClient} = useAbly();
+  const {ablyClient} = getAblyClient();
 
   const publishEvent = (eventName, data) => {
     if (!ablyClient) {

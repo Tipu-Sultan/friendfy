@@ -12,7 +12,7 @@ cloudinary.config({
 
 export const DELETE = async (req, { params }) => {
   try {
-    const { postId } = params;
+    const { postId } = await params;
 
     // Connect to the database
     await dbConnect();

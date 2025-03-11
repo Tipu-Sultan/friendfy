@@ -6,6 +6,8 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
 import ClientProvider from './ClientProvider';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,7 +16,9 @@ export const metadata = {
   description: 'A modern social media application',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -23,14 +27,14 @@ export default function RootLayout({ children }) {
         <ClientProvider
         >
           <div className="min-h-screen bg-background">
-            <Sidebar />
-            <Topbar />
-            <main className="pt-16 pb-16 md:pb-0 md:ml-64">
+          {session && <Sidebar />}
+          {session && <Topbar />}
+            <main className={session ?'pt-16 pb-16 md:pb-0 md:ml-64':''}>
               <div className="container mx-auto px-4 py-6">
                 {children}
               </div>
             </main>
-            <MobileNav />
+            {session && <MobileNav />}
           </div>
           </ClientProvider>
         </ReduxProvider>

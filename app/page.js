@@ -1,10 +1,11 @@
 import Home from '@/components/home/Home'
-import {getPosts} from '@/utils/getPosts'
+import { getPosts } from '@/utils/getPosts';
 
 
-const page = () => {
+const page = async () => {
+  const posts = await getPosts();
   return (
-      <Home/>
+      <Home posts={posts}/>
   )
 }
 

@@ -23,7 +23,7 @@ export const useProfile = (username) => {
 
   const handleMessageClick = async (profileData) => {
     const userData = {
-      createdBy: user?._id,
+      createdBy: user?.id,
       id: profileData?._id,
       name: profileData.username,
       type: 'user',
@@ -32,7 +32,7 @@ export const useProfile = (username) => {
     };
     dispatch(addRecentChat(userData));
     const res = await dispatch(createUser(userData)).unwrap();
-    if(resizeBy.status===201){
+    if(res.status===201){
       router.push(`/chat/${username}`);
     }
   };

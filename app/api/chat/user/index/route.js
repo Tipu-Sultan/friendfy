@@ -22,9 +22,7 @@ export async function POST(req) {
       $or: [
         { sender, receiver },
         { sender: receiver, receiver: sender }, // Include reverse direction
-      ],
-      deletedBySender: { $ne: true },
-      deletedByReceiver: { $ne: true },
+      ]
     })
       .sort({ createdAt: 1 }) // Sort messages by oldest first
       .skip(skip)
@@ -35,9 +33,7 @@ export async function POST(req) {
       $or: [
         { sender, receiver },
         { sender: receiver, receiver: sender },
-      ],
-      deletedBySender: { $ne: true },
-      deletedByReceiver: { $ne: true },
+      ]
     });
 
     // Respond with paginated messages and metadata

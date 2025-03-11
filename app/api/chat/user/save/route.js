@@ -22,8 +22,8 @@ export async function POST(req) {
       receiver,
       content,
       contentType,
-      media: media || null, // Optional media
-      isRead: false, // Default to unread
+      media: media || null, 
+      isRead: false,
       reactions: [],
       deletedBySender: false,
       deletedByReceiver: false,

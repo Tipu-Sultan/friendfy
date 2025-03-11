@@ -55,7 +55,7 @@ export const fetchPosts = createAsyncThunk(
 // Initial state
 
 const initialState = {
-  reduxPost: [],
+  posts: [],
   postFormData: {
     content: "",
     file: null,
@@ -80,7 +80,7 @@ const postSlice = createSlice({
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
     
-      state.reduxPost = state.reduxPost.map((post) =>
+      state.posts = state.posts.map((post) =>
         post._id === postId
           ? {
               ...post, // Ensure other properties of the post are retained
@@ -93,16 +93,16 @@ const postSlice = createSlice({
     },
 
     addNewPost(state, action) {
-      state.reduxPost.push(action.payload); 
+      state.posts.push(action.payload); 
     },
 
     setPosts(state, action) {
-      state.reduxPost = action.payload; 
+      state.posts = action.payload; 
     },
 
     updateDeletePost(state, action) {
       const { postId } = action.payload;
-      state.reduxPost = state.reduxPost.filter(post => post._id !== postId); // Remove post by ID
+      state.posts = state.posts.filter(post => post._id !== postId); // Remove post by ID
     },
     
   },
@@ -127,7 +127,7 @@ const postSlice = createSlice({
       .addCase(fetchPosts.fulfilled, (state,action) => {
         state.isLoading = false;
         state.error = null;
-        state.reduxPost = action.payload.posts;
+        state.posts = action.payload.posts;
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.isLoading = false;

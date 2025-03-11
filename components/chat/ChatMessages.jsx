@@ -1,25 +1,19 @@
-import { deleteMessage, fetchPaginationsMessages, updateDeleteMessage } from '@/redux/slices/chatSlice';
+import { fetchPaginationsMessages } from '@/redux/slices/chatSlice';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react'; // Assuming you're using Lucide icons
+import { MoreVertical } from 'lucide-react';
 import { timeAgo } from '@/utils/timeAgo';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Skeleton } from '../ui/skeleton';
 
-export default function ChatMessages({chatLoading, selectedUser, currentUser,privateSocket }) {
-  const dispatch = useDispatch()
-  const {messages } = useSelector((state) => state.chat);
+export default function ChatMessages({handleMsgDelete, chatLoading, selectedUser, currentUser, privateSocket }) {
+  const dispatch = useDispatch();
+  const { messages } = useSelector((state) => state.chat);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(5);
   const endOfMessagesRef = useRef(null);
   const chatContainerRef = useRef(null);
-
-  const handleDelete = (msgId,senderId,isSender) => {
-    privateSocket?.emit("delete-message", {msgId,isSender});
-    dispatch(deleteMessage({msgId,senderId,isSender}))
-  };
-
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,28 +36,22 @@ export default function ChatMessages({chatLoading, selectedUser, currentUser,pri
     }
   };
 
-  useEffect(() => {
-    if (privateSocket) {
-      privateSocket?.on("message-deleted", ({msgId,isSender}) => {
-        dispatch(updateDeleteMessage({msgId,isSender}))
-      });
-
-      return () => {
-        privateSocket?.off("message-deleted");
-      };
-    }
-  }, [dispatch, privateSocket]);
 
   const filteredMessages = messages.filter((message) => {
     const senderDetails = selectedUser?.type === 'group' ? message?.sender : null;
     const isSender = senderDetails?._id === currentUser?.id || message?.sender === currentUser?.id;
-    // Filter out messages deleted by the receiver if the current user is not the sender
+
+    // If both sender and receiver deleted the message, still show a placeholder
+    if (message?.deletedByReceiver && message?.deletedBySender) return true;
+
+    // Hide messages deleted by the receiver (only for non-senders)
     if (!isSender && message?.deletedByReceiver) return false;
-    // Filter out messages deleted by the sender for all users
+
+    // Hide messages deleted by the sender (for all users)
     if (isSender && message?.deletedBySender) return false;
+
     return true;
   });
-  
 
   return (
     <div
@@ -86,16 +74,13 @@ export default function ChatMessages({chatLoading, selectedUser, currentUser,pri
           ))
         : filteredMessages?.map((message, i) => {
             const senderDetails = selectedUser?.type === 'group' ? message?.sender : null;
-            const senderId = selectedUser?.type === 'group' ? message?.sender?._id : message?.sender ;
+            const senderId = selectedUser?.type === 'group' ? message?.sender?._id : message?.sender;
             const isSender = senderDetails?._id === currentUser?.id || message?.sender === currentUser?.id;
             const isPending = message?.status === 'pending';
             const isFailed = message?.status === 'failed';
 
             return (
-              <div
-                key={i}
-                className={`relative flex ${isSender ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={i} className={`relative flex ${isSender ? 'justify-end' : 'justify-start'}`}>
                 <div className="flex items-start space-x-2 group">
                   {selectedUser?.type === 'group' && !isSender && senderDetails && (
                     <img
@@ -117,22 +102,22 @@ export default function ChatMessages({chatLoading, selectedUser, currentUser,pri
                       </p>
                     )}
 
-                    <p className="text-sm">{message.content}</p>
+                    {/* ✅ Display "This message was deleted." if both deletedBySender & deletedByReceiver are true */}
+                    <p className="text-sm">
+                      {(!isSender && message.deletedByReceiver)
+                        ? "This message was deleted."
+                        : message.content}
+                    </p>
+
 
                     {isSender && (
                       <span className="text-xs opacity-70 mt-1 block">
-                        {isPending
-                          ? 'Sending...'
-                          : isFailed
-                          ? 'Failed to send'
-                          : timeAgo(message.createdAt)}
+                        {isPending ? 'Sending...' : isFailed ? 'Failed to send' : timeAgo(message.createdAt)}
                       </span>
                     )}
 
                     {!isSender && (
-                      <span className="text-xs opacity-70 mt-1 block">
-                        {timeAgo(message.createdAt)}
-                      </span>
+                      <span className="text-xs opacity-70 mt-1 block">{timeAgo(message.createdAt)}</span>
                     )}
 
                     <DropdownMenu>
@@ -146,7 +131,7 @@ export default function ChatMessages({chatLoading, selectedUser, currentUser,pri
                         <DropdownMenuItem>React</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleDelete(message.tempId,senderId,isSender)}
+                          onClick={() => handleMsgDelete(message.tempId, senderId, isSender)}
                           className="text-destructive"
                         >
                           Delete

@@ -7,8 +7,6 @@ const useFetchFriends = () => {
   const dispatch = useDispatch();
   const { user} = useUser();
 
-  console.log(user);
-
   // Access suggested friends from Redux state
   const { suggestedFriends, status, error } = useSelector((state) => state.follow);
 

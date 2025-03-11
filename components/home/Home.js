@@ -1,22 +1,9 @@
-'use client'
 import AddPostSection from '@/components/home/AddPostSection';
 import FriendSuggestions from '@/components/home/FriendSuggestions';
 import PostCard from '@/components/home/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchPosts, setPosts } from '@/redux/slices/postSlice';
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-
 
 const Home = ({posts}) => {
-    const { reduxPost} = useSelector((state) => state.posts);
-    const dispatch = useDispatch();
-  // Fetch posts on initial load
-    useEffect(() => {
-      if (reduxPost.length === 0) {
-        dispatch(fetchPosts());
-      }
-    }, [dispatch, reduxPost.length]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Left Section */}
@@ -30,7 +17,7 @@ const Home = ({posts}) => {
         </div>
 
         {/* Posts Section */}
-        {reduxPost.length<0? (
+        {posts.length===0? (
           // Skeletons for loading state
           Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="mb-4">
@@ -43,7 +30,7 @@ const Home = ({posts}) => {
             </div>
           ))
         ) : (
-          [...reduxPost]?.reverse().map((post) => (
+          [...posts]?.reverse().map((post) => (
             <PostCard key={post._id} post={post} />
           ))
         )}

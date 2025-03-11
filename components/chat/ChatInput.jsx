@@ -6,17 +6,29 @@ import AttachFile from '@/components/ui-modols/AttachFile'
 import { useDispatch, useSelector } from 'react-redux';
 import { setContent } from '@/redux/slices/chatSlice';
 
-export default function ChatInput({ selectedUser, user,handleMessageSend}) {
+export default function ChatInput({isTyping, setIsTyping,sendTypingEvent, selectedUser, user,handleMessageSend}) {
   const dispatch = useDispatch()
   const {content} = useSelector((state)=>state.chat)
   const textareaRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
+
 
   const handleInputChange = (e) => {
     e.stopPropagation();
     dispatch(setContent(e.target.value));
     textareaRef.current.style.height = 'auto';
     textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+
+
+    if (!isTyping) {
+      sendTypingEvent(true);
+    }
+
+    // Stop typing after 2 seconds of inactivity
+    setTimeout(() => {
+      setIsTyping(false);
+      sendTypingEvent(false);
+    }, 2000);
   };
 
   const handleKeyDown = (e) => {
@@ -27,6 +39,7 @@ export default function ChatInput({ selectedUser, user,handleMessageSend}) {
         handleMessageSend(user?.id, selectedUser?.id,selectedUser?.type);
         dispatch(setContent(''));
         textareaRef.current.style.height = 'auto'; // Reset height
+        sendTypingEvent(false);
       }
     }
   };
