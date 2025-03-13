@@ -31,7 +31,10 @@ const userSchema = new mongoose.Schema(
         name: { type: String, default: '' }, // Group or user name
         type: { type: String, enum: ['user', 'group'], required: true }, // Type of chat
         profilePicture: { type: String, default: '' }, // Profile picture URL
-        lastMessage: { type: String, default: '' }, // Last message in the chat
+        lastMessage: {
+          text: { type: String, default: "" },
+          date: { type: Date, default: Date.now },
+        },
         updatedAt: { type: Date, default: Date.now }, // When the chat was last updated
       },
     ],

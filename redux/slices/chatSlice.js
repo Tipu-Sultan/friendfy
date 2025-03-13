@@ -235,15 +235,35 @@ const chatSlice = createSlice({
     updateDeleteMessage: (state, action) => {
       const { msgId, isSender } = action.payload;
     
-      if (isSender) {
-        // If the sender is deleting the message, remove it from the messages array
-        state.messages = state.messages.filter((message) => message.tempId !== msgId);
-      } else {
-        // If the receiver is deleting the message, update `deletedByReceiver` to true
-        state.messages = state.messages.map((message) =>
-          message.tempId === msgId ? { ...message, deletedByReceiver: true } : message
-        );
-      }
+      state.messages = state.messages.map((message) =>
+        message.tempId === msgId
+          ? { 
+              ...message, 
+              ...(isSender ? { deletedBySender: true } : { deletedByReceiver: true }) 
+            }
+          : message
+      );
+    },    
+    
+    updateRecentChats: (state, action) => {
+      const { sender, receiver, content } = action.payload.message;
+    
+      const updateChat = (chatPartnerId, lastMessage) => {
+        const chatIndex = state.recentChats.findIndex((chat) => chat.id === chatPartnerId);
+    
+        if (chatIndex !== -1) {
+          // If chat exists, update lastMessage
+          state.recentChats[chatIndex].lastMessage = {
+            text: lastMessage,
+            date: new Date().toISOString(),
+          };
+          state.recentChats[chatIndex].updatedAt = new Date().toISOString();
+        }
+      };
+    
+      // Update recentChats for both sender and receiver
+      updateChat(sender, content);
+      updateChat(receiver, content);
     },
     
 
@@ -349,7 +369,7 @@ const chatSlice = createSlice({
 
 export const { 
   addRecentChat, addGroupToState,
-  setSelectedUser, addMessage, 
+  setSelectedUser, addMessage, updateRecentChats,
   updateMessageStatus, setContent,
   resetPagination,updateDeleteMessage
 } = chatSlice.actions;

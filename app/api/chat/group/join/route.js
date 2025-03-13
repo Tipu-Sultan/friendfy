@@ -28,6 +28,11 @@ export async function POST(req) {
       );
     }
 
+    const lastMessage = {
+      text: 'Created Now', // Default message when the group is created
+      date: new Date(),
+    };
+
     // Update the user's recentChats with the new group
     const updatedUser = await User.findByIdAndUpdate(
       joinBy,
@@ -39,7 +44,7 @@ export async function POST(req) {
             name: joinGroup.name,
             type: 'group',
             profilePicture: joinGroup.groupImage || '',
-            lastMessage: 'created now',
+            lastMessage,
             updatedAt: new Date(),
           },
         },

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MoreVertical } from "lucide-react";
@@ -11,24 +12,27 @@ import { useDispatch } from "react-redux";
 import { setSelectedUser } from "@/redux/slices/chatSlice";
 import { useRouter } from "next/navigation";
 
-export default function ChatHeader({typingUsers , isTyping, selectedUser, isMobileView }) {
+export default function ChatHeader({
+  typingUsers,
+  isTyping,
+  selectedUser,
+  isMobileView,
+}) {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  // Fetch online users only when the component mounts
   const handleBack = () => {
+    dispatch(setSelectedUser(null));
     router.push(`/chat`);
   };
-  const dispatch = useDispatch();
+
   return (
     <div className="p-4 border-b flex items-center justify-between">
       <div className="flex items-center space-x-3">
         {isMobileView && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              dispatch(setSelectedUser(null));
-              handleBack();
-            }}
-          >
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
         )}
@@ -50,7 +54,9 @@ export default function ChatHeader({typingUsers , isTyping, selectedUser, isMobi
                 : "Online"
               : isTyping
               ? "Typing..."
-              : "Online"}
+              : onlineUsers.includes(selectedUser.id)
+              ? "Online"
+              : "Offline"}
           </p>
         </div>
       </div>

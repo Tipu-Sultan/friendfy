@@ -4,6 +4,7 @@ import axios from "axios";
 
 const initialState = {
   user: null,
+  onlineUsers: [],
   profileData: null,
   status: null,
   loading: false,
@@ -105,6 +106,12 @@ const authSlice = createSlice({
       const { field, value } = action.payload;
       state.userFormData[field] = value;
     },
+
+    setOnlineUsers: (state, action) => {
+      state.onlineUsers = Array.from(new Set([...state.onlineUsers, ...action.payload]));
+    },
+    
+
     setLoginDetails: (state, action) => {
       const { field, value } = action.payload;
       state.loginFormData[field] = value;
@@ -215,5 +222,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUserDetails, setLoginDetails, setForgotEmail, setResetDetails, setUsernameAvailability} = authSlice.actions;
+export const {setOnlineUsers, setUserDetails, setLoginDetails, setForgotEmail, setResetDetails, setUsernameAvailability} = authSlice.actions;
 export default authSlice.reducer;

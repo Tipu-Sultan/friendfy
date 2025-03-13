@@ -11,13 +11,11 @@ import useDynamicView from '@/hooks/useDynamicView';
 import { useSelector } from 'react-redux';
 import { useChat } from '@/hooks/useChats';
 import { useUser } from '@/hooks/useUser';
-import { getAblyClient } from '@/lib/ablyClient';
 
 
 export default function Chat({ params }) {
     const { username } = use(params);
     const { user} = useUser();
-    const {ablyClient} = getAblyClient(user?.id);
     const isMobileView = useDynamicView();
     const {
         groupData,
@@ -40,13 +38,12 @@ export default function Chat({ params }) {
         isModalOpen, 
         setIsModalOpen,
         updateGroup,
-    } = useUserList(user, username,ablyClient)
-    const {
+    } = useUserList(user, username)
+    const {onlineUsers,
         loadMessages,handleMessageSend, setContent, 
         content,handleMsgDelete,sendTypingEvent,typingUsers,isTyping, setIsTyping} = useChat(user)
 
     const { messages, recentChats,selectedUser,chatLoading } = useSelector((state) => state.chat)
-
 
 
 
@@ -74,6 +71,7 @@ export default function Chat({ params }) {
                 setGroupUsers={setGroupUsers}
                 handleSelectedUsers={handleSelectedUsers}
                 loadMessages={loadMessages}
+                message={messages}
                 handleGroupSettings={handleGroupSettings}
                 groupData={groupData}
                 isModalOpen={isModalOpen}
@@ -84,14 +82,13 @@ export default function Chat({ params }) {
             <div className={`md:col-span-2 lg:col-span-3 ${!selectedUser && isMobileView ? 'hidden' : 'block'} overflow-y-auto`}>
                 {selectedUser ? (
                     <Card className="h-full flex flex-col">
-                        <ChatHeader typingUsers={typingUsers} isTyping={isTyping}  selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
+                        <ChatHeader onlineUsers={onlineUsers} typingUsers={typingUsers} isTyping={isTyping}  selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
                         <ChatMessages
                         handleMsgDelete={handleMsgDelete}
                             loadMessages={loadMessages}
                             currentUser={user}
                             selectedUser={selectedUser}
                             messages={messages}
-                            privateSocket={ablyClient}
                             chatLoading={chatLoading}
                         />
                         <ChatInput 

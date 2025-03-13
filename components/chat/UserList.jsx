@@ -64,7 +64,10 @@ export default function UserList({
                   </div>
                 </div>
               ))
-            : filteredUsers?.map((recentUser, i) => (
+            : filteredUsers
+            ?.slice() // Create a shallow copy
+            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) // Sort by latest update time
+            .map((recentUser, i) =>(
                 <div
                   key={i}
                   className={`w-full p-4 flex items-center space-x-3 hover:bg-secondary transition-colors border-b ${
@@ -75,7 +78,6 @@ export default function UserList({
                     onClick={() => {
                       if (selectedUser?.id !== recentUser?.id) {
                         handleSelectedUsers(recentUser);
-                        loadMessages(authData._id, recentUser.id, recentUser?.type);
                       }
                     }}
                     className="flex-1 flex items-center space-x-3 cursor-pointer"
@@ -89,7 +91,7 @@ export default function UserList({
                     </Avatar>
                     <div className="flex-1 text-left">
                       <h3 className="font-semibold">{recentUser?.name}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{recentUser?.lastMessage}</p>
+                      <p className="text-sm text-muted-foreground truncate">{recentUser?.lastMessage?.text}</p>
                     </div>
                     <span className="text-xs text-muted-foreground">{timeAgo(recentUser?.updatedAt)}</span>
                   </div>

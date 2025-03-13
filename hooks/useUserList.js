@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 
-export const useUserList = (user, username,privateSocket) => {
+export const useUserList = (user, username) => {
     const dispatch = useDispatch();
     const router  = useRouter()
     const { recentChats, groupsFriends, error,groupData } = useSelector((state) => state.chat);
@@ -48,7 +48,6 @@ export const useUserList = (user, username,privateSocket) => {
         if (selected.type === 'user') {
             router.push(`/chat/${selected?.name}`);
         } else {
-          privateSocket?.emit("joinGroup", {receiver:selected?.id,userId:user?._id});
             router.push(`/chat/${selected?.groupId}`);
         }
     };
@@ -66,7 +65,7 @@ export const useUserList = (user, username,privateSocket) => {
         const groupData = {
             name: groupName,
             description: 'A group for study discussions',
-            createdBy: user._id,
+            createdBy: user.id,
             members: groupUsers,
             groupImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
             settings: { isPrivate: true },
@@ -81,7 +80,7 @@ export const useUserList = (user, username,privateSocket) => {
     const handleJoinGroup = async (groupId) => {
         const groupData = {
             groupId: groupId,
-            joinBy:user._id,
+            joinBy:user.id,
         };
 
         const res = await dispatch(joinGroup(groupData)).unwrap();

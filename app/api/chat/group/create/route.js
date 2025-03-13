@@ -3,6 +3,7 @@ import Group from '@/models/GroupModel'; // Group model
 import User from '@/models/UserModel'; // User model
 import { NextResponse } from 'next/server'; // Use NextResponse for handling responses
 import { generateGroupId } from '@/utils/groupId'; // Import utility function
+import mongoose from 'mongoose'; // Import mongoose for ObjectId handling
 
 // Ensure the database connection
 dbConnect();
@@ -49,9 +50,15 @@ export async function POST(req) {
       groupType,
     });
 
-    // Add the new group to recentChats and return only the newly added object
-    const updatedUser = await User.findByIdAndUpdate(
-      createdBy,
+    // Create a structured lastMessage object
+    const lastMessage = {
+      text: 'Created Now', // Default message when the group is created
+      date: new Date(),
+    };
+
+    // Update recentChats for ALL members
+    await User.updateMany(
+      { _id: { $in: members } }, // ✅ Find all users in the group
       {
         $push: {
           recentChats: {
@@ -60,22 +67,21 @@ export async function POST(req) {
             name: newGroup.name,
             type: 'group',
             profilePicture: newGroup.groupImage || '',
-            lastMessage: 'created now',
+            lastMessage, // Insert structured lastMessage
             updatedAt: new Date(),
           },
         },
-      },
-      {
-        new: true, // Ensure the updated document is returned
-        projection: { recentChats: { $slice: -1 } }, // Return only the last added item
       }
     );
+
+    // Fetch updated recentChats for the creator to return response
+    const updatedUser = await User.findById(createdBy, { recentChats: { $slice: -1 } });
 
     // Return success response
     return NextResponse.json({
       message: 'Group created successfully!',
       status: 201,
-      recentChat: updatedUser?.recentChats[0], // Return only the recently added object
+      recentChat: updatedUser?.recentChats[0], // ✅ Return only the recently added chat for the creator
     });
   } catch (error) {
     console.error('Error creating group:', error);
@@ -85,6 +91,7 @@ export async function POST(req) {
     );
   }
 }
+
 
 export const config = {
   runtime: 'edge', // Ensures the use of Edge Runtime

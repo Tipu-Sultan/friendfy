@@ -6,48 +6,37 @@ import Group from '@/models/GroupModel'; // GroupMessage model
 
 
 export async function POST(req, { params }) {
-    const { id } = await params; // Extract the message ID from the parameters
+    const { id } = await params; // Extract the message ID
     const { senderId, isSender } = await req.json(); // Extract senderId and isSender from the request body
+
+    if (!id || !senderId) {
+        return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 });
+    }
 
     try {
         await dbConnect(); // Connect to the database
 
-        if (isSender) {
-            // If the sender deletes the message, remove it entirely
-            const result = await GroupMessage.deleteOne({ tempId: id });
+        // Define update query based on sender or receiver action
+        const updateQuery = isSender
+            ? { $set: { deletedBySender: true } }
+            : { $set: { deletedByReceiver: true } };
 
-            if (result.deletedCount > 0) {
-                return NextResponse.json(
-                    { message: 'Message deleted successfully by sender' },
-                    { status: 200 }
-                );
-            } else {
-                return NextResponse.json(
-                    { error: 'Message not found or already deleted' },
-                    { status: 404 }
-                );
-            }
-        } else {
-            // If the receiver deletes the message, update `deletedByReceiver` to true
-            const result = await GroupMessage.updateOne(
-                { tempId: id },
-                { $set: { deletedByReceiver: true } }
+        // Update message instead of deleting it
+        const result = await GroupMessage.updateOne({ tempId: id }, updateQuery);
+
+        if (result.modifiedCount > 0) {
+            return NextResponse.json(
+                { message: `Message marked as deleted by ${isSender ? 'sender' : 'receiver'}` },
+                { status: 200 }
             );
-
-            if (result.modifiedCount > 0) {
-                return NextResponse.json(
-                    { message: 'Message marked as deleted by receiver' },
-                    { status: 200 }
-                );
-            } else {
-                return NextResponse.json(
-                    { error: 'Message not found or already updated' },
-                    { status: 404 }
-                );
-            }
+        } else {
+            return NextResponse.json(
+                { error: 'Message not found or already updated' },
+                { status: 404 }
+            );
         }
     } catch (error) {
-        console.error('Error handling message delete request:', error);
+        console.error('Error processing delete request:', error);
         return NextResponse.json(
             { error: 'Error processing the delete request', details: error.message },
             { status: 500 }
