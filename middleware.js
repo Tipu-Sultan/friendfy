@@ -5,8 +5,10 @@ export function middleware(req) {
   const privateRoutes = ["/", "/chat", "/profile"]; // Add more private routes as needed
 
   const url = req.nextUrl;
-  const token = req.cookies.get("next-auth.session-token"); // Assuming authentication token is stored in cookies
-
+  const token = req.cookies.get(
+    process.env.NODE_ENV === "development" ? "next-auth.session-token" : "__Secure-next-auth.session-token"
+  )?.value; // Extracting the value from the cookie object
+  
   // Allow access to public routes
   if (publicRoutes.includes(url.pathname)) {
     return NextResponse.next();
