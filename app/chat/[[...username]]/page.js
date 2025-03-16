@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { useChat } from '@/hooks/useChats';
 import { useUser } from '@/hooks/useUser';
 import { getAblyClient } from '@/lib/ablyClient';
+import { useOnlineUsers } from '@/context/OnlineUsersContext';
 
 
 export default function Chat({ params }) {
@@ -42,17 +43,18 @@ export default function Chat({ params }) {
         setIsModalOpen,
         updateGroup,
     } = useUserList(user, username)
-    const {onlineUsers,
+    const {
         loadMessages,handleMessageSend, setContent, 
         content,handleMsgDelete,sendTypingEvent,typingUsers,isTyping, setIsTyping} = useChat(user,client)
 
     const { messages, recentChats,selectedUser,chatLoading } = useSelector((state) => state.chat)
 
-
+    const onlineUsers = useOnlineUsers();
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
             <UserList
+            onlineUsers={onlineUsers}
             authData={user}
                 isMobileView={isMobileView}
                 username={username}

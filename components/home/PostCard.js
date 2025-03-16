@@ -12,78 +12,48 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useEffect } from 'react';
-import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
+import {  updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
 import { useDispatch } from 'react-redux';
 import { timeAgo } from '@/utils/timeAgo';
 import { useUser } from '@/hooks/useUser';
 import { getAblyClient } from '@/lib/ablyClient';
+import { likePost, deletePost } from '@/lib/actions';
+
 
 export default function PostCard({ post, isLoading }) {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const {ablyClient} = getAblyClient();
+  const ablyClient = getAblyClient(user?.id);
 
-  const publishEvent = (eventName, data) => {
-    if (!ablyClient) {
-      console.error("Ably client is not connected yet");
-      return;
-    }
-  
-    const channel = ablyClient.channels.get("post-actions");
-    channel.publish(eventName, data, (err) => {
-      if (err) console.error("Error publishing event:", err);
-      else console.log(`Event "${eventName}" published successfully`);
-    });
-  };
   const fileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 
+  // Handle Like
   const handleLike = async () => {
-    if (!ablyClient) return; // Ensure Ably client is initialized
-
-    // Emit the like event to Ably
-    publishEvent("like-post", { postId: post?._id, userId: user?._id })
-    // Dispatch like action
-    await dispatch(likeOrUnlikePost({ postId: post?._id, userId: user?._id })).unwrap();
+    await likePost(post._id, user?.id);
   };
 
-  const handleDelete = async (postId) => {
-    if (!ablyClient) return; // Ensure Ably client is initialized
-
-    // Dispatch delete action
-    const res = await dispatch(deletePost(postId)).unwrap();
-    if (res.status === 200) {
-      // Emit the delete event to Ably
-      ablyClient.channels.get("post-actions").publish("delete-post", { postId: postId });
-    }
+  // Handle Delete
+  const handleDelete = async () => {
+    await deletePost(post._id);
   };
 
   useEffect(() => {
     if (!ablyClient) return;
-
-
     const channel = ablyClient.channels.get("post-actions");
-    
-    // Listen for the post-liked event from Ably
-    channel.subscribe("like-post", (data) => {
+  
+    // Listen for deletions
+    channel.subscribe("delete-post", (data) => {
       if (data?.postId === post._id) {
-        dispatch(updateLikeIntoPost({ postId: data.postId, userId: data.userId }));
+        document.getElementById(`post-${data.postId}`)?.remove();
       }
     });
-
-    // Listen for the post-deleted event from Ably
-    channel.subscribe("post-deleted", (data) => {
-      if (data?.postId === post._id) {
-        dispatch(updateDeletePost({ postId: data.postId }));
-      }
-    });
-
-    // Clean up listeners when the component unmounts
+  
     return () => {
-      channel.unsubscribe("post-liked");
-      channel.unsubscribe("post-deleted");
+      channel.unsubscribe("delete-post");
     };
-  }, [dispatch, ablyClient, post._id]);
+  }, [ablyClient, post._id]);
+  
 
   const renderMedia = () => {
     if (fileTypes.includes(post?.contentType) && post?.mediaUrl) {
@@ -129,7 +99,7 @@ export default function PostCard({ post, isLoading }) {
   };
 
   return (
-    <Card className="mb-6 relative max-w-lg mx-auto sm:max-w-xl md:max-w-2xl">
+    <Card id={`post-${post._id}`} className="mb-6 relative max-w-lg mx-auto sm:max-w-xl md:max-w-2xl">
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">

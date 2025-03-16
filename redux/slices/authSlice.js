@@ -110,6 +110,9 @@ const authSlice = createSlice({
     setOnlineUsers: (state, action) => {
       state.onlineUsers = Array.from(new Set([...state.onlineUsers, ...action.payload]));
     },
+    removeOnlineUser: (state, action) => {
+      state.onlineUsers = state.onlineUsers.filter((id) => id !== action.payload);
+    },
     
 
     setLoginDetails: (state, action) => {
@@ -222,5 +225,5 @@ const authSlice = createSlice({
   },
 });
 
-export const {setOnlineUsers, setUserDetails, setLoginDetails, setForgotEmail, setResetDetails, setUsernameAvailability} = authSlice.actions;
+export const {setOnlineUsers,removeOnlineUser, setUserDetails, setLoginDetails, setForgotEmail, setResetDetails, setUsernameAvailability} = authSlice.actions;
 export default authSlice.reducer;

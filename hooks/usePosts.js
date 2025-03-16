@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewPost, createPost, fetchPosts, setPostFormData } from "@/redux/slices/postSlice";
+import { addNewPost, fetchPosts, setPostFormData } from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
-import { revalidatePath } from "next/cache";
+import { createNewPost } from "@/actions/serverActions";
 
 const usePosts = () => {
   const dispatch = useDispatch();
@@ -12,7 +12,7 @@ const usePosts = () => {
   const { content, contentType } = postFormData;
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Ably client and channel initialization
   const client = getAblyClient(user?.id || null);
@@ -57,7 +57,7 @@ const usePosts = () => {
     }
 
     try {
-      setUploadProgress(10); // Start upload progress
+      setUploadProgress(10);
       const formData = new FormData();
       formData.append("content", content);
       if (selectedMedia) {
@@ -66,32 +66,29 @@ const usePosts = () => {
       }
       formData.append("userId", user?.id);
 
-      // Send the post creation request
-      const res = await dispatch(createPost(formData)).unwrap();
+      // Call the server action instead of Redux action
+      const res = await createNewPost(formData);
 
-      if (res.status === 201) {
+      if (res?.success) {
         const newPost = res.post;
 
         // Broadcast new post via Ably
         postChannel?.publish("new-post", newPost);
 
-        setUploadProgress(100); // Complete upload progress
-        setTimeout(() => setUploadProgress(0), 500); // Reset progress after short delay
+        setUploadProgress(100);
+        setTimeout(() => setUploadProgress(0), 500);
       }
 
       // Reset form
-      revalidatePath("/");
       setSelectedMedia(null);
       setMediaPreview(null);
       dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
     } catch (error) {
       console.error("Error submitting post:", error.message);
       alert("Failed to create post. Please try again.");
-      setUploadProgress(0); // Reset on failure
+      setUploadProgress(0);
     }
   };
-
-  
 
   // Subscribe to Ably channel for real-time updates
   useEffect(() => {

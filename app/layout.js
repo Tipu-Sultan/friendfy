@@ -8,6 +8,7 @@ import MobileNav from '@/components/layout/MobileNav';
 import ClientProvider from './ClientProvider';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+import { OnlineUsersProvider } from '@/context/OnlineUsersContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,11 +30,13 @@ export default async function RootLayout({ children }) {
           <div className="min-h-screen bg-background">
           {session && <Sidebar />}
           {session && <Topbar />}
+          <OnlineUsersProvider userId={session?.user?.id}>
             <main className={session ?'pt-16 pb-16 md:pb-0 md:ml-64':''}>
               <div className="container mx-auto px-4 py-6">
                 {children}
               </div>
             </main>
+            </OnlineUsersProvider>
             {session && <MobileNav />}
           </div>
           </ClientProvider>

@@ -7,7 +7,7 @@ const Home = ({posts}) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Left Section */}
-      <div className="lg:col-span-2 max-w-[500px] min-w-[400px] mx-auto">
+      <div className="lg:col-span-2 max-w-[400px] min-w-[400px] mx-auto">
         {/* Add Post Section */}
         <AddPostSection />
 

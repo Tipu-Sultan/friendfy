@@ -21,10 +21,10 @@ export default function ChatHeader({
   isMobileView,
   ablyClient,
   currentUser,
+  onlineUsers
 }) {
   const router = useRouter();
-  const dispatch = useDispatch();
-  const [onlineUsers, setOnlineUsers] = useState([]);
+  const dispatch = useDispatch();  
 
   const handleBack = () => {
     dispatch(setSelectedUser(null));
@@ -46,6 +46,8 @@ export default function ChatHeader({
     endCall,
     startCall,
     setShowCallModal,
+    callStatus,
+    callDuration
   } = useCall(selectedUser, currentUser, ablyClient);
 
   return (
@@ -81,7 +83,7 @@ export default function ChatHeader({
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        <Button
+        {selectedUser.type === "user"&& <><Button
           onClick={() => startCall(selectedUser?.id, "audio")}
           variant="ghost"
           size="icon"
@@ -95,6 +97,7 @@ export default function ChatHeader({
         >
           <Video className="w-5 h-5" />
         </Button>
+        </>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -112,21 +115,24 @@ export default function ChatHeader({
       </div>
 
       <CallModal
-      selectedUser={selectedUser}
-        showCallModal={showCallModal}
-        setShowCallModal={setShowCallModal}
-        isReceiving={isReceiving}
-        callType={callType}
-        caller={caller}
-        callerName={callerName}
-        acceptCall={acceptCall}
-        callAccepted={callAccepted}
-        endCall={endCall}
-        stream={stream}
-        remoteStream={remoteStream}
-        localVideoRef={localVideoRef} // ✅ Ensure this is passed
-        remoteVideoRef={remoteVideoRef} // ✅ Ensure this is passed
-      />
+  selectedUser={selectedUser}
+  showCallModal={showCallModal}
+  setShowCallModal={setShowCallModal}
+  isReceiving={isReceiving}
+  callType={callType}
+  callerName={callerName}
+  caller={caller}
+  acceptCall={acceptCall}
+  callAccepted={callAccepted}
+  endCall={endCall}
+  stream={stream}
+  remoteStream={remoteStream}
+  localVideoRef={localVideoRef}
+  remoteVideoRef={remoteVideoRef}
+  callStatus={callStatus}
+  callDuration={callDuration}
+/>
+
     </div>
   );
 }
