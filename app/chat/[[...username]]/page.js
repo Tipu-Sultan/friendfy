@@ -11,12 +11,15 @@ import useDynamicView from '@/hooks/useDynamicView';
 import { useSelector } from 'react-redux';
 import { useChat } from '@/hooks/useChats';
 import { useUser } from '@/hooks/useUser';
+import { getAblyClient } from '@/lib/ablyClient';
 
 
 export default function Chat({ params }) {
     const { username } = use(params);
     const { user} = useUser();
     const isMobileView = useDynamicView();
+      const client = getAblyClient(user?.id || null);
+    
     const {
         groupData,
         groupName,
@@ -41,7 +44,7 @@ export default function Chat({ params }) {
     } = useUserList(user, username)
     const {onlineUsers,
         loadMessages,handleMessageSend, setContent, 
-        content,handleMsgDelete,sendTypingEvent,typingUsers,isTyping, setIsTyping} = useChat(user)
+        content,handleMsgDelete,sendTypingEvent,typingUsers,isTyping, setIsTyping} = useChat(user,client)
 
     const { messages, recentChats,selectedUser,chatLoading } = useSelector((state) => state.chat)
 
@@ -82,7 +85,7 @@ export default function Chat({ params }) {
             <div className={`md:col-span-2 lg:col-span-3 ${!selectedUser && isMobileView ? 'hidden' : 'block'} overflow-y-auto`}>
                 {selectedUser ? (
                     <Card className="h-full flex flex-col">
-                        <ChatHeader onlineUsers={onlineUsers} typingUsers={typingUsers} isTyping={isTyping}  selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
+                        <ChatHeader currentUser={user} ablyClient={client} onlineUsers={onlineUsers} typingUsers={typingUsers} isTyping={isTyping}  selectedUser={selectedUser} isMobileView={isMobileView} setSelectedUser={setSelectedUser} />
                         <ChatMessages
                         handleMsgDelete={handleMsgDelete}
                             loadMessages={loadMessages}

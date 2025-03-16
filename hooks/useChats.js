@@ -9,9 +9,8 @@ import {
   updateRecentChats,
 } from "../redux/slices/chatSlice";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { getAblyClient, getOnlineUsers } from "@/lib/ablyClient";
 
-export const useChat = (user) => {
+export const useChat = (user,client) => {
   const dispatch = useDispatch();
   const { recentChats, messages, selectedUser, chatLoading, error, content } =
     useSelector((state) => state.chat);
@@ -24,7 +23,6 @@ export const useChat = (user) => {
   const stableSelectedUser = useMemo(() => selectedUser, [selectedUser]);
   const stableUser = useMemo(() => user, [user]);
 
-  const client = getAblyClient(stableUser?.id || null);
   const channelName =
     stableSelectedUser?.type === "group"
       ? stableSelectedUser.id

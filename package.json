@@ -74,6 +74,7 @@
     "react-redux": "^9.1.2",
     "recharts": "^2.14.1",
     "sanitize-html": "^2.13.1",
+    "simple-peer": "^9.11.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.5.2",
