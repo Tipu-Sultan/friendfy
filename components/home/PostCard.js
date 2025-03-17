@@ -17,10 +17,13 @@ import { getAblyClient } from "@/lib/ablyClient";
 import renderMedia from "@/utils/renderMedia";
 import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from "@/redux/slices/postSlice";
 import { useDispatch } from "react-redux";
+import CommentModal from "../ui-modols/CommentModal";
 
 export default function PostCard({ post }) {
   const { user } = useUser();
   const dispatch = useDispatch();
+  const [showComments, setShowComments] = useState(false);
+
 
   const ablyClient = getAblyClient(user?.id); // Get Ably client instance
   const channel = ablyClient?.channels.get("post-actions"); // Get the channel
@@ -121,7 +124,7 @@ export default function PostCard({ post }) {
             />
             <span>{post?.likes?.length}</span>
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button  onClick={() => setShowComments(true)} variant="ghost" size="sm">
             <MessageCircle className="w-5 h-5" />
             <span>{post?.comments?.length}</span>
           </Button>
@@ -131,6 +134,7 @@ export default function PostCard({ post }) {
           </Button>
         </div>
       </div>
+      {showComments && <CommentModal userId={user?.id} currectPost={post} postId={post._id} showModal={showComments} setShowModal={setShowComments} />}
     </Card>
   );
 }

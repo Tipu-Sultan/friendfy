@@ -40,6 +40,43 @@ export const likeOrUnlikePost = createAsyncThunk(
   }
 );
 
+export const addComment = createAsyncThunk(
+  "comments/addComment",
+  async ({ postId, userId, text }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/post/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, text }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to add comment");
+
+      return { postId, comment: data.comment };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Async thunk to delete a comment
+export const deleteComment = createAsyncThunk(
+  "comments/deleteComment",
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/post/${postId}/comment/${commentId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete comment");
+      return { postId, commentId };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
   async (_, { rejectWithValue }) => {
@@ -90,6 +127,13 @@ const postSlice = createSlice({
             }
           : post
       );
+    },
+    addNewComment: (state, action) => {
+      const { postId, comment } = action.payload;
+      if (!state.comments[postId]) {
+        state.comments[postId] = [];
+      }
+      state.comments[postId].unshift(comment);
     },
 
     addNewPost(state, action) {
@@ -161,5 +205,5 @@ const postSlice = createSlice({
   },
 });
 
-export const { setPostFormData, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost,setPosts } = postSlice.actions;
+export const { setPostFormData,addNewComment, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost,setPosts } = postSlice.actions;
 export default postSlice.reducer;
