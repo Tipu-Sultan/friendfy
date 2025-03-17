@@ -1,25 +1,23 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewPost, fetchPosts, setPostFormData } from "@/redux/slices/postSlice";
+import { addNewPost, createPost, setPostFormData } from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
-import { createNewPost } from "@/actions/serverActions";
 
 const usePosts = () => {
   const dispatch = useDispatch();
   const { user } = useUser();
+  const ablyClient = getAblyClient(user?.id); // Get Ably client
+  const postChannel = ablyClient?.channels.get("add-post-actions"); // Get channel
+
   const { posts, isLoading, postFormData } = useSelector((state) => state.posts);
   const { content, contentType } = postFormData;
+  
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Ably client and channel initialization
-  const client = getAblyClient(user?.id || null);
-  const channelName = "new-posts-channel";
-  const postChannel = client?.channels?.get(channelName);
-
-  // Handle content change
+  // Handle text content change
   const handleContentChange = (e) => {
     dispatch(setPostFormData({ content: e.target.value }));
   };
@@ -30,13 +28,10 @@ const usePosts = () => {
     if (file) {
       setSelectedMedia(file);
       setMediaPreview(URL.createObjectURL(file));
-
-      dispatch(
-        setPostFormData({
-          file: file,
-          contentType: file.type,
-        })
-      );
+      dispatch(setPostFormData({
+        file: { name: file.name, type: file.type, size: file.size },
+        contentType: file.type,
+      }));
     }
   };
 
@@ -44,7 +39,7 @@ const usePosts = () => {
   const handleRemoveMedia = () => {
     setSelectedMedia(null);
     setMediaPreview(null);
-    dispatch(setPostFormData({ file: null, contentType: "" }));
+    dispatch(setPostFormData({ file: null, contentType: null }));
   };
 
   // Submit the post
@@ -57,7 +52,7 @@ const usePosts = () => {
     }
 
     try {
-      setUploadProgress(10);
+      setUploadProgress(10); // Start progress
       const formData = new FormData();
       formData.append("content", content);
       if (selectedMedia) {
@@ -66,48 +61,45 @@ const usePosts = () => {
       }
       formData.append("userId", user?.id);
 
-      // Call the server action instead of Redux action
-      const res = await createNewPost(formData);
+      const res = await dispatch(createPost(formData)).unwrap();
 
-      if (res?.success) {
+      if (res.status === 201) {
         const newPost = res.post;
-
-        // Broadcast new post via Ably
-        postChannel?.publish("new-post", newPost);
+        postChannel?.publish("new-post", { userId: user.id, post: newPost }); // Broadcast
 
         setUploadProgress(100);
         setTimeout(() => setUploadProgress(0), 500);
-      }
 
-      // Reset form
-      setSelectedMedia(null);
-      setMediaPreview(null);
-      dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
+        dispatch(setPostFormData({ content: "", file: null, contentType: "" })); // Reset form
+        setSelectedMedia(null);
+        setMediaPreview(null);
+      }
     } catch (error) {
-      console.error("Error submitting post:", error.message);
+      console.error("Error submitting post:", error);
       alert("Failed to create post. Please try again.");
       setUploadProgress(0);
     }
   };
 
-  // Subscribe to Ably channel for real-time updates
   useEffect(() => {
     if (!postChannel) return;
 
-    const handleReceivePost = (message) => {
-      const newPost = message.data;
-      dispatch(addNewPost(newPost)); // Add new post to Redux store
+    // Subscribe to new posts
+    const subscribeToPosts = async () => {
+      await postChannel.subscribe("new-post", (message) => {
+        const newPost = message.data.post;
+        dispatch(addNewPost(newPost)); // Add to Redux store
+      });
     };
 
-    postChannel.subscribe("new-post", handleReceivePost);
+    subscribeToPosts();
 
     return () => {
-      postChannel.unsubscribe("new-post", handleReceivePost);
+      postChannel.unsubscribe("new-post"); // Cleanup on unmount
     };
   }, [postChannel, dispatch]);
 
   return {
-    posts,
     isLoading,
     content,
     contentType,

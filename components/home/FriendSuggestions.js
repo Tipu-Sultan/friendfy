@@ -14,9 +14,6 @@ export default function FriendSuggestions() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>People you might know</CardTitle>
-      </CardHeader>
       <CardContent className="space-y-4">
         {/* Desktop: Vertical List */}
         <div className="hidden lg:block">
@@ -52,7 +49,7 @@ export default function FriendSuggestions() {
         </div>
 
         {/* Mobile/Tablet: Horizontal Scrollable Carousel */}
-        <div className="flex space-x-4 overflow-x-auto lg:hidden scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-gray-200 py-2">
+        <div className="flex space-x-4 overflow-x-auto lg:hidden scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-gray-200 py-2 scrollbar-hide">
           {suggestedFriends?.map(
             (suggestion) =>
               suggestion?._id !== user?._id && (

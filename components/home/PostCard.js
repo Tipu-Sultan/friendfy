@@ -1,164 +1,133 @@
-'use client';
-import { Button } from '@/components/ui/button'; 
-import { Card } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react';
-import Image from 'next/image';
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
+import { Heart, MessageCircle, Share2, MoreVertical } from "lucide-react";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useEffect } from 'react';
-import {  updateDeletePost, updateLikeIntoPost } from '@/redux/slices/postSlice';
-import { useDispatch } from 'react-redux';
-import { timeAgo } from '@/utils/timeAgo';
-import { useUser } from '@/hooks/useUser';
-import { getAblyClient } from '@/lib/ablyClient';
-import { likePost, deletePost } from '@/lib/actions';
+} from "@/components/ui/dropdown-menu";
+import { useEffect, useState } from "react";
+import { useUser } from "@/hooks/useUser";
+import { getAblyClient } from "@/lib/ablyClient";
+import renderMedia from "@/utils/renderMedia";
+import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from "@/redux/slices/postSlice";
+import { useDispatch } from "react-redux";
 
-
-export default function PostCard({ post, isLoading }) {
-  const dispatch = useDispatch();
+export default function PostCard({ post }) {
   const { user } = useUser();
-  const ablyClient = getAblyClient(user?.id);
+  const dispatch = useDispatch();
 
-  const fileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
+  const channel = ablyClient?.channels.get("post-actions"); // Get the channel
 
+  const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-  // Handle Like
   const handleLike = async () => {
-    await likePost(post._id, user?.id);
+    if (!channel) return;
+
+    // Publish like event to Ably
+    channel.publish("like-post", { postId: post._id, userId: user.id });
+
+    // Update Redux state
+    await dispatch(
+      likeOrUnlikePost({ postId: post._id, userId: user?.id })
+    ).unwrap();
   };
 
-  // Handle Delete
   const handleDelete = async () => {
-    await deletePost(post._id);
+    if (!channel) return;
+
+    const res = await dispatch(deletePost(post._id)).unwrap();
+
+    if (res.status === 200) {
+      // Publish delete event to Ably
+      channel.publish("delete-post", { postId: post._id });
+    }
   };
 
   useEffect(() => {
-    if (!ablyClient) return;
-    const channel = ablyClient.channels.get("post-actions");
-  
-    // Listen for deletions
-    channel.subscribe("delete-post", (data) => {
-      if (data?.postId === post._id) {
-        document.getElementById(`post-${data.postId}`)?.remove();
+    if (!channel) return;
+
+    // Listen for like updates
+    channel.subscribe("like-post", (post) => {
+        dispatch(updateLikeIntoPost({ postId: post.data.postId, userId: post.data.userId }));
+    });
+
+    // Listen for post deletions
+    channel.subscribe("delete-post", (post) => {
+      if (post.data?.postId) {
+        dispatch(updateDeletePost({ postId: post.data.postId })); // Dispatch action to remove post
       }
     });
-  
+
+    // Cleanup function
     return () => {
+      channel.unsubscribe("like-post");
       channel.unsubscribe("delete-post");
     };
-  }, [ablyClient, post._id]);
-  
-
-  const renderMedia = () => {
-    if (fileTypes.includes(post?.contentType) && post?.mediaUrl) {
-      return (
-        <div className="relative w-full max-h-80 overflow-hidden mb-4">
-          <Image
-            src={post?.mediaUrl}
-            alt="Preview"
-            className="w-full max-h-60 object-contain"
-            width={100}
-            height={100}
-          />
-        </div>
-      );
-    }
-
-    if (post?.contentType === 'video/mp4' && post?.mediaUrl) {
-      return (
-        <div className="relative overflow-hidden mb-4">
-          <video controls className="max-h-96 w-full object-cover rounded-lg">
-            <source src={post?.mediaUrl} type={post?.contentType} />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      );
-    }
-
-    if (post?.contentType === 'text/plain' && post?.content) {
-      return (
-        <p
-          className="mb-4 text-sm break-words"
-          style={{ whiteSpace: 'pre-line' }}
-          dangerouslySetInnerHTML={{
-            __html: post?.content
-              ?.match(/.{1,32}/g) // Split the content into chunks of 50 characters
-              ?.join('<br />'),   // Join chunks with <br /> tags
-          }}
-        ></p>
-      );
-    }
-
-    return null; // If no content type matches
-  };
+  }, [dispatch, channel, post._id]);
 
   return (
-    <Card id={`post-${post._id}`} className="mb-6 relative max-w-lg mx-auto sm:max-w-xl md:max-w-2xl">
+    <Card className="mb-6 max-w-lg mx-auto">
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <Avatar>
               <Image
-                src={post?.user?.profilePicture || '/default-avatar.png'} // Fallback if no profile picture
+                src={post?.user?.profilePicture || "/default-avatar.png"}
                 alt={post?.user?.username}
                 className="w-10 h-10 rounded-full"
                 width={40}
                 height={40}
               />
             </Avatar>
-            <div className="truncate">
-              <h3 className="font-semibold text-sm md:text-base">{post?.user?.username}</h3>
-              <p className="text-xs text-muted-foreground">{timeAgo(post?.createdAt)}</p>
+            <div>
+              <h3 className="font-semibold">{post?.user?.username}</h3>
+              <p className="text-xs text-muted-foreground">
+                {new Date(post?.createdAt).toLocaleString()}
+              </p>
             </div>
           </div>
 
-          {/* Dropdown Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild className="focus:outline-none">
-              <Button variant="ghost" size="icon" >
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className=""
-            >
-              <DropdownMenuItem >Edit</DropdownMenuItem>
-              <DropdownMenuItem >Report</DropdownMenuItem>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Report</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleDelete(post?._id)}
-                className="cursor-pointer text-destructive focus:text-destructive"
-              >
-                {isLoading === 'deletePost' ? 'Deleting...' : 'Delete'}
+              <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* Render media based on contentType */}
-        {renderMedia()}
+        {renderMedia(fileTypes, post)}
 
-        <div className="flex items-center justify-start space-x-4 mt-4">
-          <Button onClick={handleLike} variant="ghost" size="sm" className="flex items-center">
+        <div className="flex items-center space-x-4 mt-4">
+          <Button onClick={handleLike} variant="ghost" size="sm">
             <Heart
-              className={`w-5 h-5 mr-2 ${post.likes.includes(user?._id) ? 'text-red-600' : ''}`}
+              className={`w-5 h-5 ${
+                post.likes.includes(user?.id) ? "text-red-600" : ""
+              }`}
             />
-            <span className="text-xs sm:text-sm">{post?.likes?.length}</span>
+            <span>{post?.likes?.length}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center">
-            <MessageCircle className="w-5 h-5 mr-2" />
-            <span className="text-xs sm:text-sm">{post?.comments?.length}</span>
+          <Button variant="ghost" size="sm">
+            <MessageCircle className="w-5 h-5" />
+            <span>{post?.comments?.length}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center">
-            <Share2 className="w-5 h-5 mr-2" />
-            <span className="text-xs sm:text-sm">Share</span>
+          <Button variant="ghost" size="sm">
+            <Share2 className="w-5 h-5" />
+            <span>Share</span>
           </Button>
         </div>
       </div>
