@@ -3,6 +3,7 @@ import AddPostSection from "@/components/home/AddPostSection";
 import FriendSuggestions from "@/components/home/FriendSuggestions";
 import PostCard from "@/components/home/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
@@ -37,7 +38,29 @@ const Home = ({ posts: initialPosts }) => {
 
         {/* Friend Suggestions (Mobile Only) */}
         <div className="lg:hidden md:block py-4">
-          <FriendSuggestions ablyClient={ablyClient} />
+          {loading ? (
+            <Card>
+              <CardContent className="space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div>
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-8 w-20 rounded-md" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <FriendSuggestions ablyClient={ablyClient} />
+          )}
         </div>
 
         {/* Loading Skeleton */}
@@ -94,7 +117,29 @@ const Home = ({ posts: initialPosts }) => {
 
       {/* Right Section (Desktop Only) */}
       <div className="hidden lg:block sticky top-20">
-        <FriendSuggestions ablyClient={ablyClient} />
+        {loading ? (
+          <Card>
+            <CardContent className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2"
+                >
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div>
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : (
+          <FriendSuggestions ablyClient={ablyClient} />
+        )}
       </div>
     </div>
   );
