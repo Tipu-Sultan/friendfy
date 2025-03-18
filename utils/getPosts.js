@@ -1,10 +1,9 @@
 import dbConnect from '@/lib/db';
 import Post from '@/models/PostModel';
-import User from '@/models/UserModel';
 
 export async function getPosts() {
     try {
-        await dbConnect(); 
+        await dbConnect();
 
         const posts = await Post.find()
             .populate({
@@ -12,7 +11,11 @@ export async function getPosts() {
                 select: 'username profilePicture',
             })
             .populate({
-                path: 'comments.user', // Populate comment users
+                path: 'comments.user',
+                select: 'username profilePicture',
+            })
+            .populate({
+                path: 'comments.replies.user', // Populate reply users
                 select: 'username profilePicture',
             })
             .lean();
@@ -21,14 +24,14 @@ export async function getPosts() {
             ...post,
             _id: post._id.toString(),
             user: post.user
-                ? { 
-                    ...post.user, 
+                ? {
+                    ...post.user,
                     _id: post.user._id.toString(),
                     profilePicture: post.user.profilePicture 
                         ? post.user.profilePicture.toString('base64') 
-                        : null, 
+                        : null,
                 }
-                : null, 
+                : null,
             likes: post.likes.map((like) => like.toString()),
 
             comments: post.comments.map((comment) => ({
@@ -43,7 +46,21 @@ export async function getPosts() {
                             : null,
                     }
                     : null,
-                replies: comment.replies.map((replyId) => replyId.toString()), // Convert reply IDs to strings
+                replies: comment.replies.map((reply) => ({
+                    ...reply,
+                    _id: reply._id.toString(),
+                    user: reply.user
+                        ? {
+                            ...reply.user,
+                            _id: reply.user._id.toString(),
+                            profilePicture: reply.user.profilePicture 
+                                ? reply.user.profilePicture.toString('base64') 
+                                : null,
+                        }
+                        : null,
+                    createdAt: reply.createdAt.toISOString(),
+                    updatedAt: reply.updatedAt.toISOString(),
+                })),
                 createdAt: comment.createdAt.toISOString(),
                 updatedAt: comment.updatedAt.toISOString(),
             })),

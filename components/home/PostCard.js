@@ -12,21 +12,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { useUser } from "@/hooks/useUser";
-import { getAblyClient } from "@/lib/ablyClient";
 import renderMedia from "@/utils/renderMedia";
 import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from "@/redux/slices/postSlice";
 import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 
-export default function PostCard({ post }) {
-  const { user } = useUser();
+export default function PostCard({ post,channel,user }) {
   const dispatch = useDispatch();
   const [showComments, setShowComments] = useState(false);
 
-
-  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
-  const channel = ablyClient?.channels.get("post-actions"); // Get the channel
 
   const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -134,7 +128,7 @@ export default function PostCard({ post }) {
           </Button>
         </div>
       </div>
-      {showComments && <CommentModal userId={user?.id} currectPost={post} postId={post._id} showModal={showComments} setShowModal={setShowComments} />}
+      {showComments && <CommentModal commentChannel={channel} currentUser={user} userId={user?.id} currectPost={post} postId={post._id} showModal={showComments} setShowModal={setShowComments} />}
     </Card>
   );
 }

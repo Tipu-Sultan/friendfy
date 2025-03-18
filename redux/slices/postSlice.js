@@ -30,7 +30,7 @@ export const deletePost = createAsyncThunk(
 
 export const likeOrUnlikePost = createAsyncThunk(
   "posts/likeOrUnlikePost ",
-  async ({postId,userId}, { rejectWithValue }) => {
+  async ({ postId, userId }, { rejectWithValue }) => {
     try {
       const response = await axios.post("/api/post/like", { postId, userId });
       return response.data;
@@ -51,9 +51,31 @@ export const addComment = createAsyncThunk(
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to add comment");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to add comment");
 
       return { postId, comment: data.comment };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addReply = createAsyncThunk(
+  "comments/addReply",
+  async ({ postId, commentId, userId, text }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/post/${postId}/comment/${commentId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, text }),
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to add reply");
+
+      return { postId, commentId, reply: data.reply };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -77,6 +99,23 @@ export const deleteComment = createAsyncThunk(
   }
 );
 
+export const deleteReply = createAsyncThunk(
+  "comments/deleteReply",
+  async ({ postId, commentId, replyId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/post/${postId}/comment/${commentId}/reply/${replyId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete reply");
+      return { postId, commentId, replyId };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
 export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
   async (_, { rejectWithValue }) => {
@@ -84,7 +123,9 @@ export const fetchPosts = createAsyncThunk(
       const response = await axios.get("/api/post/index");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.error || "Something went wrong.");
+      return rejectWithValue(
+        error.response.data.error || "Something went wrong."
+      );
     }
   }
 );
@@ -111,52 +152,128 @@ const postSlice = createSlice({
       state.postFormData = { ...state.postFormData, ...action.payload };
     },
     resetPostFormData: (state) => {
-      state.postFormData = { content: "", mediaFile: null, contentType: "text/plain" };
+      state.postFormData = {
+        content: "",
+        mediaFile: null,
+        contentType: "text/plain",
+      };
     },
 
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
-    
+
       state.posts = state.posts.map((post) =>
         post._id === postId
           ? {
               ...post, // Ensure other properties of the post are retained
               likes: post.likes.includes(userId)
-                ? post.likes.filter((id) => id !== userId) 
-                : [...post.likes, userId], 
+                ? post.likes.filter((id) => id !== userId)
+                : [...post.likes, userId],
             }
           : post
       );
     },
-    addNewComment: (state, action) => {
-      const { postId, comment } = action.payload;
-      if (!state.comments[postId]) {
-        state.comments[postId] = [];
-      }
-      state.comments[postId].unshift(comment);
+
+    updatePostComment: (state, action) => {
+      const { postId, comment } = action.payload; // Expecting full comment object from server
+
+      return {
+        ...state,
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: [...post.comments, comment], // Add comment as received
+              }
+            : post
+        ),
+      };
     },
 
+    updatePostAfterDeleteComment: (state, action) => {
+      const { postId, commentId } = action.payload;
+  
+      return {
+          ...state,
+          posts: state.posts.map(post =>
+              post._id === postId
+                  ? {
+                      ...post,
+                      comments: post.comments.filter(comment => comment._id !== commentId) // Remove deleted comment
+                  }
+                  : post
+          )
+      };
+  },
+
+  updatePostReply: (state, action) => {
+    const { postId, commentId, reply } = action.payload;
+  
+    return {
+      ...state,
+      posts: state.posts.map((post) =>
+        post._id === postId
+          ? {
+              ...post,
+              comments: post.comments.map((comment) =>
+                comment._id === commentId
+                  ? {
+                      ...comment,
+                      replies: [...comment.replies, reply], // Add reply to correct comment
+                    }
+                  : comment
+              ),
+            }
+          : post
+      ),
+    };
+  },
+  
+  updatePostAfterDeleteReply: (state, action) => {
+    const { postId, commentId, replyId } = action.payload;
+  
+    return {
+      ...state,
+      posts: state.posts.map((post) =>
+        post._id === postId
+          ? {
+              ...post,
+              comments: post.comments.map((comment) =>
+                comment._id === commentId
+                  ? {
+                      ...comment,
+                      replies: comment.replies.filter(reply => reply._id !== replyId) // Remove deleted reply
+                    }
+                  : comment
+              ),
+            }
+          : post
+      ),
+    };
+  },
+  
+  
     addNewPost(state, action) {
-      state.posts.push(action.payload); 
+      state.posts.push(action.payload);
     },
 
     setPosts(state, action) {
-      state.posts = action.payload; 
+      state.posts = action.payload;
     },
 
     updateDeletePost(state, action) {
       const { postId } = action.payload;
-      state.posts = state.posts.filter(post => post._id !== postId); // Remove post by ID
+      state.posts = state.posts.filter((post) => post._id !== postId); // Remove post by ID
     },
-    
   },
+
   extraReducers: (builder) => {
     builder
-      
+
       .addCase(likeOrUnlikePost.pending, (state) => {
-        state.isLoading = 'likeOrUnlikePost';
+        state.isLoading = "likeOrUnlikePost";
       })
-      .addCase(likeOrUnlikePost.fulfilled, (state,action) => {
+      .addCase(likeOrUnlikePost.fulfilled, (state, action) => {
         state.isLoading = false;
         state.error = null;
       })
@@ -166,9 +283,9 @@ const postSlice = createSlice({
       })
 
       .addCase(fetchPosts.pending, (state) => {
-        state.isLoading = 'fetchPosts';
+        state.isLoading = "fetchPosts";
       })
-      .addCase(fetchPosts.fulfilled, (state,action) => {
+      .addCase(fetchPosts.fulfilled, (state, action) => {
         state.isLoading = false;
         state.error = null;
         state.posts = action.payload.posts;
@@ -179,7 +296,7 @@ const postSlice = createSlice({
       })
 
       .addCase(createPost.pending, (state) => {
-        state.isLoading = 'createPost';
+        state.isLoading = "createPost";
       })
       .addCase(createPost.fulfilled, (state) => {
         state.isLoading = false;
@@ -191,7 +308,7 @@ const postSlice = createSlice({
       })
 
       .addCase(deletePost.pending, (state) => {
-        state.isLoading = 'deletePost';
+        state.isLoading = "deletePost";
       })
       .addCase(deletePost.fulfilled, (state) => {
         state.isLoading = false;
@@ -200,10 +317,21 @@ const postSlice = createSlice({
       .addCase(deletePost.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-      })
-      ;
+      });
   },
 });
 
-export const { setPostFormData,addNewComment, resetPostFormData,updateLikeIntoPost,addNewPost,updateDeletePost,setPosts } = postSlice.actions;
+export const {
+  setPostFormData,
+  addNewComment,
+  updatePostReply,
+  updatePostComment,
+  updatePostAfterDeleteComment,
+  updatePostAfterDeleteReply,
+  resetPostFormData,
+  updateLikeIntoPost,
+  addNewPost,
+  updateDeletePost,
+  setPosts,
+} = postSlice.actions;
 export default postSlice.reducer;

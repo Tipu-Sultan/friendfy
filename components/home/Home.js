@@ -6,18 +6,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
+import { getAblyClient } from "@/lib/ablyClient";
+import { useUser } from "@/hooks/useUser";
 
 const Home = ({ posts: initialPosts }) => {
   const dispatch = useDispatch();
   const { posts } = useSelector((state) => state.posts);
   const [loading, setLoading] = useState(true); // Track API loading state
+  const { user } = useUser();
+
+  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
+  const channel = ablyClient?.channels.get("post-actions"); // Get the channel
+
+  console.log(initialPosts)
 
   useEffect(() => {
     if (initialPosts.length > 0) {
       dispatch(setPosts(initialPosts));
     }
     setTimeout(() => setLoading(false), 1000); // Simulating API delay
-  }, [dispatch, initialPosts]);
+  }, [dispatch, initialPosts,]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8 lg:px-16">
@@ -61,11 +69,15 @@ const Home = ({ posts: initialPosts }) => {
             <p className="text-lg font-semibold text-gray-700 mt-4">
               Oops! No posts yet.
             </p>
-            <p className="text-sm text-gray-500">Be the first to share something!</p>
+            <p className="text-sm text-gray-500">
+              Be the first to share something!
+            </p>
           </div>
         ) : (
           // Display Posts
-          posts.map((post) => <PostCard key={post._id} post={post} />)
+          posts.map((post) => (
+            <PostCard channel={channel} user={user} key={post._id} post={post} />
+          ))
         )}
       </div>
 
