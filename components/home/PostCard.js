@@ -16,87 +16,62 @@ import renderMedia from "@/utils/renderMedia";
 import {
   deletePost,
   likeOrUnlikePost,
+  setPostFormData,
   updateDeletePost,
   updateLikeIntoPost,
 } from "@/redux/slices/postSlice";
 import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
-import { getAblyClient } from "@/lib/ablyClient";
 
-export default function PostCard({ setEditingPost, post, user }) {
+export default function PostCard({ setEditingPost, post, user,ablyClient}) {
   const dispatch = useDispatch();
-  const ablyClient = getAblyClient(user?.id);
-  const deleteChanel = ablyClient?.channels.get("post-delete-actions"); // Get the channel
-  const likeChannel = ablyClient?.channels.get("post-like-actions"); // Get the channel
-
+  const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
   const [showComments, setShowComments] = useState(false);
   const [showReportModal, setReportModal] = useState(false);
-
+  
   const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
   const handleLikePost = async () => {
-    if (!likeChannel) return;
-
+    if (!postChannel) return;
+  
     // Publish like event to Ably
-    likeChannel.publish("like-post", { postId: post._id, userId: user.id });
-
-    console.log("like-post", { postId: post._id, userId: user.id });
+    postChannel.publish("like-post", { postId: post._id, userId: user.id });
+  
     // Dispatch like/unlike action
-    await dispatch(
-      likeOrUnlikePost({ postId: post._id, userId: user.id })
-    ).unwrap();
+    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user.id })).unwrap();
   };
-
+  
   const handleDeletePost = async () => {
-    if (!deleteChanel) return;
+    if (!postChannel) return;
 
     const res = await dispatch(deletePost(post._id)).unwrap();
 
     if (res.status === 200) {
-      // Publish delete event to Ably
-      deleteChanel.publish("delete-post", { postId: post._id });
+      postChannel.publish("delete-post", { postId: post._id });
     }
   };
 
   useEffect(() => {
-    if (!likeChannel) return;
+    if (!postChannel) return;
 
-    // Listen for like updates
-    likeChannel.subscribe("like-post", (message) => {
-      console.log("like-post", message.data);
-
-      dispatch(updateLikeIntoPost(message.data));
-    });
-
-    // Listen for post deletions
-    likeChannel.subscribe("delete-post", (postData) => {
-      if (postData.data?.postId) {
-        dispatch(updateDeletePost({ postId: postData.data.postId })); // Dispatch action to remove post
-      }
-    });
-
-    // Cleanup function
-    return () => {
-      likeChannel.unsubscribe("like-post");
+    const likeHandler = (message) => {
+        dispatch(updateLikeIntoPost(message.data));
     };
-  }, [dispatch, likeChannel]);
-
-  useEffect(() => {
-    if (!deleteChanel) return;
-
-    // Listen for post deletions
-    deleteChanel.subscribe("delete-post", (postData) => {
-      if (postData.data?.postId) {
-        dispatch(updateDeletePost({ postId: postData.data.postId })); // Dispatch action to remove post
-      }
-    });
-
-    // Cleanup function
-    return () => {
-      deleteChanel.unsubscribe("delete-post");
+    
+    const deleteHandler = (postData) => {
+        dispatch(updateDeletePost({ postId: postData.data.postId }));
     };
-  }, [dispatch, deleteChanel]);
+
+    postChannel.subscribe("like-post", likeHandler);
+    postChannel.subscribe("delete-post", deleteHandler);
+
+    return () => {
+        postChannel.unsubscribe("like-post", likeHandler);
+        postChannel.unsubscribe("delete-post", deleteHandler);
+    };
+}, [postChannel, dispatch]);
+
 
   return (
     <Card className="mb-6 max-w-lg mx-auto">
@@ -164,12 +139,11 @@ export default function PostCard({ setEditingPost, post, user }) {
           <Button onClick={handleLikePost} variant="ghost" size="sm">
             <Heart
               className={`w-5 h-5 ${
-                post.likes.includes(user?.id) ? "text-red-600" : "text-gray-400"
+                post.likes.includes(user?.id) ? "text-red-600" : ""
               }`}
             />
             <span>{post?.likes?.length}</span>
           </Button>
-
           <Button
             onClick={() => setShowComments(true)}
             variant="ghost"

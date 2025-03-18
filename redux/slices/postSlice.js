@@ -201,9 +201,6 @@ const postSlice = createSlice({
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
     
-      console.log("Post ID being liked:", postId);
-      console.log("Before update:", JSON.stringify(state.posts, null, 2));
-    
       const updatedPosts = state.posts.map((post) => {
         if (post._id === postId) {
           const isLiked = post.likes.includes(userId);
@@ -219,7 +216,6 @@ const postSlice = createSlice({
     
       state.posts = [...updatedPosts]; // Ensure immutability
     
-      console.log("After update:", JSON.stringify(state.posts, null, 2));
     },
     
 
