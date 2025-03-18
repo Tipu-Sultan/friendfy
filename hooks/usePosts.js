@@ -1,28 +1,47 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewPost, createPost, setPostFormData } from "@/redux/slices/postSlice";
+import { createPost, updatePost, setPostFormData, addNewPost, updateExistingPost } from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
 
-const usePosts = () => {
+const usePosts = (editingPost = null,setEditingPost) => {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const ablyClient = getAblyClient(user?.id); // Get Ably client
-  const postChannel = ablyClient?.channels.get("add-post-actions"); // Get channel
+  const ablyClient = getAblyClient(user?.id);
+  const postChannel = ablyClient?.channels.get("add-post-actions");
 
   const { posts, isLoading, postFormData } = useSelector((state) => state.posts);
   const { content, contentType } = postFormData;
-  
+
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [postId, setPostId] = useState(null);
 
-  // Handle text content change
+
+  useEffect(() => {
+    if (editingPost) {
+      setIsEditing(true);
+      setPostId(editingPost._id);
+      dispatch(setPostFormData({ 
+        content: editingPost.content || "", 
+        contentType: editingPost.contentType || "",
+      }));
+      setMediaPreview(editingPost.mediaUrl || null);
+    } else {
+      setIsEditing(false);
+      setPostId(null);
+      dispatch(setPostFormData({ content: "", contentType: "" }));
+      setMediaPreview(null);
+    }
+  }, [editingPost, dispatch]);
+  
+
   const handleContentChange = (e) => {
     dispatch(setPostFormData({ content: e.target.value }));
   };
 
-  // Handle media file change
   const handleMediaChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -35,14 +54,12 @@ const usePosts = () => {
     }
   };
 
-  // Remove selected media
   const handleRemoveMedia = () => {
     setSelectedMedia(null);
     setMediaPreview(null);
     dispatch(setPostFormData({ file: null, contentType: null }));
   };
 
-  // Submit the post
   const handlePostSubmit = async (e) => {
     e.preventDefault();
 
@@ -52,7 +69,7 @@ const usePosts = () => {
     }
 
     try {
-      setUploadProgress(10); // Start progress
+      setUploadProgress(10);
       const formData = new FormData();
       formData.append("content", content);
       if (selectedMedia) {
@@ -60,23 +77,34 @@ const usePosts = () => {
         formData.append("contentType", contentType);
       }
       formData.append("userId", user?.id);
+      formData.append("postId", editingPost?._id);
 
-      const res = await dispatch(createPost(formData)).unwrap();
+      let response;
+      if (isEditing && postId) {
+        response = await dispatch(updatePost({postId,updatedData: formData })).unwrap();
+      } else {
+        response = await dispatch(createPost(formData)).unwrap();
+      }
 
-      if (res.status === 201) {
-        const newPost = res.post;
-        postChannel?.publish("new-post", { userId: user.id, post: newPost }); // Broadcast
+      if (response.status === 201 || response.status === 200) {
+        isEditing && postId?
+        postChannel?.publish("update-post", { userId: user.id, updatedFields: response.updatedFields, postId }):
+        postChannel?.publish("new-post",{ userId: user.id, post: response.post })
+
 
         setUploadProgress(100);
         setTimeout(() => setUploadProgress(0), 500);
 
-        dispatch(setPostFormData({ content: "", file: null, contentType: "" })); // Reset form
+        dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
         setSelectedMedia(null);
         setMediaPreview(null);
+        setIsEditing(false);
+        setPostId(null);
+        setEditingPost(null)
       }
     } catch (error) {
       console.error("Error submitting post:", error);
-      alert("Failed to create post. Please try again.");
+      alert("Failed to save post. Please try again.");
       setUploadProgress(0);
     }
   };
@@ -94,8 +122,20 @@ const usePosts = () => {
 
     subscribeToPosts();
 
+     // Subscribe to new posts
+     const updatePost = async () => {
+      await postChannel.subscribe("update-post", (message) => {
+        const { updatedFields, postId } = message.data;
+        dispatch(updateExistingPost({ postId, updatedFields })); // Dispatch update
+      });
+    };
+    
+
+    updatePost();
+
     return () => {
       postChannel.unsubscribe("new-post"); // Cleanup on unmount
+      postChannel.unsubscribe("update-post"); // Cleanup on unmount
     };
   }, [postChannel, dispatch]);
 
@@ -106,6 +146,7 @@ const usePosts = () => {
     mediaPreview,
     selectedMedia,
     uploadProgress,
+    isEditing,
     handleContentChange,
     handleRemoveMedia,
     handleMediaChange,

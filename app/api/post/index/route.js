@@ -80,7 +80,6 @@ export const POST = async (req) => {
       comments: post.comments || [],
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
-      __v: post.__v,
     };
 
     return NextResponse.json(

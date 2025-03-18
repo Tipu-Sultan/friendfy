@@ -28,6 +28,7 @@ const postSchema = new mongoose.Schema(
     content: { type: String, required: true },
     mediaUrl: { type: String, default: "" },
     contentType: { type: String, default: "text/plain" },
+    isEdited:{type: Boolean, default:false},
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     comments: [commentSchema], // Embed comment schema
   },

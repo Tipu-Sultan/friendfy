@@ -17,7 +17,34 @@ export async function POST(req) {
   }
 
   try {
-    // Create a new message
+    // Fetch sender and receiver users
+    const senderUser = await User.findById(sender);
+    const receiverUser = await User.findById(receiver);
+
+    if (!senderUser || !receiverUser) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if sender is blocked by receiver or vice versa
+    const senderBlocked = receiverUser.recentChats.some(
+      (chat) => chat.id.toString() === sender && chat.isBlocked
+    );
+
+    const receiverBlocked = senderUser.recentChats.some(
+      (chat) => chat.id.toString() === receiver && chat.isBlocked
+    );
+
+    if (senderBlocked || receiverBlocked) {
+      return NextResponse.json(
+        { error: "Message cannot be sent. User is blocked." },
+        { status: 403 }
+      );
+    }
+
+    // Create and store message
     const newMessage = new Message({
       tempId,
       sender,
@@ -33,7 +60,6 @@ export async function POST(req) {
       editedAt: null,
     });
 
-    // Save the message to the database
     await newMessage.save();
 
     // Prepare lastMessage object
@@ -58,6 +84,7 @@ export async function POST(req) {
     );
   }
 }
+
 
 // Function to update only the lastMessage field in recentChats
 async function updateLastMessage(senderId, receiverId, lastMessage) {

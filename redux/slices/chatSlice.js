@@ -176,6 +176,18 @@ export const deleteMessage = createAsyncThunk(
   }
 );
 
+export const updateBlockStatus = createAsyncThunk(
+  "chat/updateBlockStatus",
+  async ({ currentUser, UserId }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`/api/chat/user/index`, { currentUser, UserId });
+      return response.data; // Return updated chat data
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to update block status");
+    }
+  }
+);
+
 
 // Slice definition
 const chatSlice = createSlice({
@@ -284,6 +296,26 @@ const chatSlice = createSlice({
         state.chatLoading = null;
         state.error = action.payload.message;
       })
+
+      .addCase(updateBlockStatus.pending, (state) => {
+        state.chatLoading = 'updateBlockStatus';
+        state.error = null;
+      })
+      .addCase(updateBlockStatus.fulfilled, (state, action) => {
+        const updatedChat = action.payload.updatedChat;
+      
+        // Update only the `isBlocked` field in the existing `recentChats` array
+        state.recentChats = state.recentChats.map(chat =>
+          chat.id === updatedChat.id ? { ...chat, isBlocked: updatedChat.isBlocked } : chat
+        );
+      
+        state.chatLoading = null;
+      })
+      .addCase(updateBlockStatus.rejected, (state, action) => {
+        state.chatLoading = null;
+        state.error = action.payload?.message || "Failed to update block status";
+      })
+      
 
       .addCase(createUser.pending, (state) => {
         state.chatLoading = 'createUser';

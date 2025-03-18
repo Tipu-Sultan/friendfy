@@ -1,45 +1,61 @@
 import Image from "next/image";
 
-export default function renderMedia(fileTypes,post){
-    if (fileTypes.includes(post?.contentType) && post?.mediaUrl) {
-      return (
-        <div className="relative w-full max-h-80 overflow-hidden mb-4">
-          <Image
-          
-            src={post?.mediaUrl}
-            alt="Preview"
-            className="w-full max-h-60 object-contain"
-            width={100}
-            height={100}
-          />
-        </div>
-      );
-    }
+export default function renderMedia(fileTypes, post) {
+  if (!post) return null;
 
-    if (post?.contentType === 'video/mp4' && post?.mediaUrl) {
-      return (
-        <div className="relative overflow-hidden mb-4">
-          <video controls className="max-h-96 w-full object-cover rounded-lg">
-            <source src={post?.mediaUrl} type={post?.contentType} />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      );
-    }
-
-    if (post?.contentType === 'text/plain' && post?.content) {
-      return (
+  return (
+    <div className="mb-4">
+      {/* Display Text Content First */}
+      {post?.contentType === "text/plain" && post?.content && (
         <p
-          className="mb-4 text-sm break-words"
-          style={{ whiteSpace: 'pre-line' }}
+          className="mb-2 text-sm break-words"
+          style={{ whiteSpace: "pre-line" }}
           dangerouslySetInnerHTML={{
-            __html: post?.content
-              ?.match(/.{1,32}/g) // Split the content into chunks of 50 characters
-              ?.join('<br />'),   // Join chunks with <br /> tags
+            __html: post.content.replace(/\n/g, "<br />"),
           }}
         ></p>
-      );
-    }
+      )}
 
-    return null; // If no content type matches
-  };
+      {/* Display Image */}
+      {post?.contentType?.startsWith("image") && post?.mediaUrl && (
+        <>
+          <p
+            className="mb-2 text-sm break-words"
+            style={{ whiteSpace: "pre-line" }}
+            dangerouslySetInnerHTML={{
+              __html: post.content.replace(/\n/g, "<br />"),
+            }}
+          ></p>
+          <div className="relative w-full max-h-80 overflow-hidden">
+            <Image
+              src={post.mediaUrl}
+              alt="Preview"
+              className="w-full max-h-60 object-contain"
+              width={100}
+              height={100}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Display Video */}
+      {post?.contentType?.startsWith("video") && post?.mediaUrl && (
+        <>
+          <p
+            className="mb-2 text-sm break-words"
+            style={{ whiteSpace: "pre-line" }}
+            dangerouslySetInnerHTML={{
+              __html: post.content.replace(/\n/g, "<br />"),
+            }}
+          ></p>
+          <div className="relative overflow-hidden">
+            <video controls className="max-h-96 w-full object-cover rounded-lg">
+              <source src={post.mediaUrl} type={post.contentType} />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

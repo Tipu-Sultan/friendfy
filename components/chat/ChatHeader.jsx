@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MoreVertical, PhoneCall, Video } from "lucide-react";
+import { ArrowLeft, MoreVertical, PhoneCall, User, Video } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useDispatch } from "react-redux";
-import { setSelectedUser } from "@/redux/slices/chatSlice";
+import { setSelectedUser, updateBlockStatus } from "@/redux/slices/chatSlice";
 import { useRouter } from "next/navigation";
 import CallModal from "../ui-modols/CallModal";
 import { useCall } from "@/hooks/useCall";
@@ -21,10 +20,10 @@ export default function ChatHeader({
   isMobileView,
   ablyClient,
   currentUser,
-  onlineUsers
+  onlineUsers,
 }) {
   const router = useRouter();
-  const dispatch = useDispatch();  
+  const dispatch = useDispatch();
 
   const handleBack = () => {
     dispatch(setSelectedUser(null));
@@ -47,8 +46,20 @@ export default function ChatHeader({
     startCall,
     setShowCallModal,
     callStatus,
-    callDuration
+    callDuration,
   } = useCall(selectedUser, currentUser, ablyClient);
+
+  const handleBlock = async () => {
+    try {
+      const res = await dispatch(
+        updateBlockStatus({ currentUser: currentUser.id, UserId: selectedUser?.id })
+      ).unwrap();
+
+      console.log("Block status updated:", res);
+    } catch (error) {
+      console.error("Error updating block status:", error);
+    }
+  };
 
   return (
     <div className="p-4 border-b flex items-center justify-between">
@@ -83,21 +94,24 @@ export default function ChatHeader({
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        {selectedUser.type === "user"&& <><Button
-          onClick={() => startCall(selectedUser?.id, "audio")}
-          variant="ghost"
-          size="icon"
-        >
-          <PhoneCall className="w-5 h-5" />
-        </Button>
-        <Button
-          onClick={() => startCall(selectedUser?.id, "video")}
-          variant="ghost"
-          size="icon"
-        >
-          <Video className="w-5 h-5" />
-        </Button>
-        </>}
+        {selectedUser.type === "user" && (
+          <>
+            <Button
+              onClick={() => startCall(selectedUser?.id, "audio")}
+              variant="ghost"
+              size="icon"
+            >
+              <PhoneCall className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={() => startCall(selectedUser?.id, "video")}
+              variant="ghost"
+              size="icon"
+            >
+              <Video className="w-5 h-5" />
+            </Button>
+          </>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -107,32 +121,34 @@ export default function ChatHeader({
           <DropdownMenuContent align="end">
             <DropdownMenuItem>View Profile</DropdownMenuItem>
             <DropdownMenuItem>Clear Chat</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
-              Block User
+            <DropdownMenuItem
+              onClick={handleBlock}
+              className="text-destructive"
+            >
+              {!selectedUser?.isBlocked?"Block":"Unblock"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       <CallModal
-  selectedUser={selectedUser}
-  showCallModal={showCallModal}
-  setShowCallModal={setShowCallModal}
-  isReceiving={isReceiving}
-  callType={callType}
-  callerName={callerName}
-  caller={caller}
-  acceptCall={acceptCall}
-  callAccepted={callAccepted}
-  endCall={endCall}
-  stream={stream}
-  remoteStream={remoteStream}
-  localVideoRef={localVideoRef}
-  remoteVideoRef={remoteVideoRef}
-  callStatus={callStatus}
-  callDuration={callDuration}
-/>
-
+        selectedUser={selectedUser}
+        showCallModal={showCallModal}
+        setShowCallModal={setShowCallModal}
+        isReceiving={isReceiving}
+        callType={callType}
+        callerName={callerName}
+        caller={caller}
+        acceptCall={acceptCall}
+        callAccepted={callAccepted}
+        endCall={endCall}
+        stream={stream}
+        remoteStream={remoteStream}
+        localVideoRef={localVideoRef}
+        remoteVideoRef={remoteVideoRef}
+        callStatus={callStatus}
+        callDuration={callDuration}
+      />
     </div>
   );
 }

@@ -35,6 +35,8 @@ const userSchema = new mongoose.Schema(
           text: { type: String, default: "" },
           date: { type: Date, default: Date.now },
         },
+        lastSeen: { type: String, default: "" },
+        isBlocked: { type: Boolean, default:false },
         updatedAt: { type: Date, default: Date.now }, // When the chat was last updated
       },
     ],

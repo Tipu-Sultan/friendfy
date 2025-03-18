@@ -16,6 +16,22 @@ export const createPost = createAsyncThunk(
   }
 );
 
+// Async thunk for updating a post
+export const updatePost = createAsyncThunk(
+  "posts/updatePost",
+  async ({ postId, updatedData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`/api/post/index/${postId}`, updatedData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      return response.data; // Returns the updated post
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to update post");
+    }
+  }
+);
+
 export const deletePost = createAsyncThunk(
   "posts/deletePost",
   async (postId, { rejectWithValue }) => {
@@ -115,6 +131,29 @@ export const deleteReply = createAsyncThunk(
   }
 );
 
+export const reportPost = createAsyncThunk(
+  "report/reportPost",
+  async ({ postId, reason, details }, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/post/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ postId, reason, details }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to report post");
+      }
+
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
@@ -254,8 +293,18 @@ const postSlice = createSlice({
   
   
     addNewPost(state, action) {
-      state.posts.push(action.payload);
+      state.posts.unshift(action.payload);
     },
+
+    updateExistingPost: (state, action) => {
+      const { postId, updatedFields } = action.payload;
+      const index = state.posts.findIndex((post) => post._id === postId);
+      
+      if (index !== -1) {
+        state.posts[index] = { ...state.posts[index], ...updatedFields }; // Merge updated fields
+      }
+    },
+    
 
     setPosts(state, action) {
       state.posts = action.payload;
@@ -331,6 +380,7 @@ export const {
   resetPostFormData,
   updateLikeIntoPost,
   addNewPost,
+  updateExistingPost,
   updateDeletePost,
   setPosts,
 } = postSlice.actions;

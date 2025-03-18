@@ -96,7 +96,7 @@ export default function Chat({ params }) {
                             messages={messages}
                             chatLoading={chatLoading}
                         />
-                        <ChatInput 
+                        {!selectedUser?.isBlocked && <ChatInput 
                         sendTypingEvent={sendTypingEvent}
                         selectedUser={selectedUser}
                          user={user}
@@ -105,7 +105,7 @@ export default function Chat({ params }) {
                          handleMessageSend={handleMessageSend}
                          setContent={setContent}
                          content={content}
-                          />
+                          />}
                     </Card>
                 ) : (
                     <EmptyChat />

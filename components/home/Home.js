@@ -14,11 +14,10 @@ const Home = ({ posts: initialPosts }) => {
   const { posts } = useSelector((state) => state.posts);
   const [loading, setLoading] = useState(true); // Track API loading state
   const { user } = useUser();
+  const [editingPost ,setEditingPost ] = useState(null);
 
   const ablyClient = getAblyClient(user?.id); // Get Ably client instance
   const channel = ablyClient?.channels.get("post-actions"); // Get the channel
-
-  console.log(initialPosts)
 
   useEffect(() => {
     if (initialPosts.length > 0) {
@@ -31,7 +30,7 @@ const Home = ({ posts: initialPosts }) => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8 lg:px-16">
       {/* Left Section */}
       <div className="lg:col-span-2 mx-auto w-full max-w-[550px]">
-        <AddPostSection />
+        <AddPostSection editingPost={editingPost} setEditingPost={setEditingPost}/>
 
         {/* Friend Suggestions (Mobile Only) */}
         <div className="lg:hidden md:block py-4">
@@ -76,7 +75,7 @@ const Home = ({ posts: initialPosts }) => {
         ) : (
           // Display Posts
           posts.map((post) => (
-            <PostCard channel={channel} user={user} key={post._id} post={post} />
+            <PostCard setEditingPost={setEditingPost} channel={channel} user={user} key={post._id} post={post} />
           ))
         )}
       </div>

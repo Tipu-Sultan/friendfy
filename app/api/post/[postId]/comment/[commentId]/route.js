@@ -58,7 +58,7 @@ export async function DELETE(req, { params }) {
 export async function POST(req, { params }) {
   await dbConnect();
 
-  const { postId, commentId } = params;
+  const { postId, commentId } = await params;
   const { userId, text } = await req.json();
 
   if (!userId || !text) {

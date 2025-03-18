@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from '@/lib/db'; // Utility to connect to MongoDB
 import Message from '@/models/messagesModel'; // User model
+import User from "@/models/UserModel";
 
 export async function POST(req) {
   try {
@@ -52,3 +53,56 @@ export async function POST(req) {
     );
   }
 }
+
+export async function PUT(req) {
+  try {
+    await dbConnect(); // Ensure the database is connected
+
+    const { currentUser, UserId } = await req.json(); // Parse request body
+
+    if (!currentUser || !UserId) {
+      return NextResponse.json(
+        { error: "currentUser and UserId are required" },
+        { status: 400 }
+      );
+    }
+
+    // Find the current user
+    const user = await User.findById(currentUser);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Find the chat entry in recentChats
+    const chatEntry = user.recentChats.find(
+      (chat) => chat.id.toString() === UserId
+    );
+
+    if (!chatEntry) {
+      return NextResponse.json(
+        { error: "Chat entry not found in recentChats" },
+        { status: 404 }
+      );
+    }
+
+    // Toggle the isBlocked status
+    chatEntry.isBlocked = !chatEntry.isBlocked;
+
+    // Save the updated user document
+    await user.save();
+
+    return NextResponse.json({
+      success: true,
+      message: `User ${chatEntry.isBlocked ? "blocked" : "unblocked"} successfully`,
+      updatedChat: chatEntry,
+    });
+  } catch (error) {
+    console.error("Error toggling block status:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+

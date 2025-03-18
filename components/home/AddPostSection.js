@@ -9,7 +9,7 @@ import usePosts from "@/hooks/usePosts";
 import { Progress } from "../ui/progress";
 
 
-export default function AddPostSection() {
+export default function AddPostSection({editingPost,setEditingPost}) {
   const {
     isLoading,
     content,
@@ -21,7 +21,8 @@ export default function AddPostSection() {
     handleRemoveMedia,
     handleMediaChange,
     handlePostSubmit,
-  } = usePosts();
+    isEditing,
+  } = usePosts(editingPost,setEditingPost);
 
 
   return (
@@ -113,7 +114,8 @@ export default function AddPostSection() {
             </div>
             {/* Post Button */}
             <Button disabled={!(selectedMedia || content) || isLoading} type="submit" className="px-6 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 rounded-lg shadow-lg">
-              {isLoading === 'createPost' ? "Posting..." : "Post"}
+            {isLoading === "updatePost" ? "Updating..." : isEditing ? "Update Post" : "Post"}
+
             </Button>
           </div>
         </form>

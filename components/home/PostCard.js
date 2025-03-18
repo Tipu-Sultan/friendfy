@@ -13,18 +13,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import renderMedia from "@/utils/renderMedia";
-import { deletePost, likeOrUnlikePost, updateDeletePost, updateLikeIntoPost } from "@/redux/slices/postSlice";
+import {
+  deletePost,
+  likeOrUnlikePost,
+  setPostFormData,
+  updateDeletePost,
+  updateLikeIntoPost,
+} from "@/redux/slices/postSlice";
 import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
+import ReportModal from "../ui-modols/ReportModal";
 
-export default function PostCard({ post,channel,user }) {
+export default function PostCard({setEditingPost, post, channel, user }) {
   const dispatch = useDispatch();
   const [showComments, setShowComments] = useState(false);
-
+  const [showReportModal,setReportModal] = useState(false)
 
   const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-  const handleLike = async () => {
+  const handleLikePost = async () => {
     if (!channel) return;
 
     // Publish like event to Ably
@@ -36,7 +43,7 @@ export default function PostCard({ post,channel,user }) {
     ).unwrap();
   };
 
-  const handleDelete = async () => {
+  const handleDeletePost = async () => {
     if (!channel) return;
 
     const res = await dispatch(deletePost(post._id)).unwrap();
@@ -52,7 +59,12 @@ export default function PostCard({ post,channel,user }) {
 
     // Listen for like updates
     channel.subscribe("like-post", (post) => {
-        dispatch(updateLikeIntoPost({ postId: post.data.postId, userId: post.data.userId }));
+      dispatch(
+        updateLikeIntoPost({
+          postId: post.data.postId,
+          userId: post.data.userId,
+        })
+      );
     });
 
     // Listen for post deletions
@@ -68,6 +80,8 @@ export default function PostCard({ post,channel,user }) {
       channel.unsubscribe("delete-post");
     };
   }, [dispatch, channel, post._id]);
+
+  
 
   return (
     <Card className="mb-6 max-w-lg mx-auto">
@@ -87,6 +101,7 @@ export default function PostCard({ post,channel,user }) {
               <h3 className="font-semibold">{post?.user?.username}</h3>
               <p className="text-xs text-muted-foreground">
                 {new Date(post?.createdAt).toLocaleString()}
+                <span>{post.isEdited &&" Edited"}</span>
               </p>
             </div>
           </div>
@@ -98,19 +113,34 @@ export default function PostCard({ post,channel,user }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Report</DropdownMenuItem>
+              <DropdownMenuItem onClick={()=>setReportModal(true)}>Report</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                Delete
-              </DropdownMenuItem>
+              {/* Only show Delete & Edit options for the post owner */}
+              {post?.user?._id === user?.id && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setEditingPost(post)}
+                    className="text-blue-600"
+                  >
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDeletePost}
+                    className="text-red-600"
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {renderMedia(fileTypes, post)}
+        {post.isEdited && <span className="text-xs">Edited: {new Date(post?.updatedAt).toLocaleString()}</span>}
 
         <div className="flex items-center space-x-4 mt-4">
-          <Button onClick={handleLike} variant="ghost" size="sm">
+          <Button onClick={handleLikePost} variant="ghost" size="sm">
             <Heart
               className={`w-5 h-5 ${
                 post.likes.includes(user?.id) ? "text-red-600" : ""
@@ -118,7 +148,11 @@ export default function PostCard({ post,channel,user }) {
             />
             <span>{post?.likes?.length}</span>
           </Button>
-          <Button  onClick={() => setShowComments(true)} variant="ghost" size="sm">
+          <Button
+            onClick={() => setShowComments(true)}
+            variant="ghost"
+            size="sm"
+          >
             <MessageCircle className="w-5 h-5" />
             <span>{post?.comments?.length}</span>
           </Button>
@@ -128,7 +162,26 @@ export default function PostCard({ post,channel,user }) {
           </Button>
         </div>
       </div>
-      {showComments && <CommentModal commentChannel={channel} currentUser={user} userId={user?.id} currectPost={post} postId={post._id} showModal={showComments} setShowModal={setShowComments} />}
+      {showComments && (
+        <CommentModal
+          commentChannel={channel}
+          currentUser={user}
+          userId={user?.id}
+          currectPost={post}
+          postId={post._id}
+          showModal={showComments}
+          setShowModal={setShowComments}
+        />
+      )}
+
+      {showReportModal && (
+        <ReportModal
+          commentChannel={channel}
+          showModal={showReportModal}
+          setShowModal={setReportModal}
+          postId={post._id}
+        />
+      )}
     </Card>
   );
 }

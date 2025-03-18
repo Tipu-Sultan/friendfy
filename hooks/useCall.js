@@ -142,14 +142,20 @@ export const useCall = (selectedUser, user, ablyClient) => {
 
     const handleCallEnded = () => resetCallState();
 
+    const updateBlock = (message)=>{
+
+    }
+
     callChannel.subscribe("incoming-call", handleIncomingCall);
     callChannel.subscribe("call-accepted", handleCallAccepted);
     callChannel.subscribe("call-ended", handleCallEnded);
+    callChannel.subscribe("update-block-status", updateBlock);
 
     return () => {
       callChannel.unsubscribe("incoming-call", handleIncomingCall);
       callChannel.unsubscribe("call-accepted", handleCallAccepted);
       callChannel.unsubscribe("call-ended", handleCallEnded);
+      callChannel.unsubscribe("update-block-status", updateBlock);
     };
   }, [callChannel, startCallTimer, resetCallState]);
 
