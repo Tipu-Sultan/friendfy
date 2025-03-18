@@ -34,10 +34,12 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
 
   const handleLikePost = async () => {
     if (!postChannel) return;
+
   
     // Publish like event to Ably
     postChannel.publish("like-post", { postId: post._id, userId: user.id });
-  
+
+    console.log("like-post", { postId: post._id, userId: user.id })
     // Dispatch like/unlike action
     await dispatch(likeOrUnlikePost({ postId: post._id, userId: user.id })).unwrap();
   };
@@ -59,6 +61,8 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
 
     // Listen for like updates
     postChannel.subscribe("like-post", (message) => {
+    console.log("like-post", message.data)
+
       dispatch(updateLikeIntoPost(message.data));
     });
 
