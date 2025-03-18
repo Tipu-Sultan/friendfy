@@ -18,8 +18,6 @@ const Home = ({ posts: initialPosts }) => {
 
   const [editingPost, setEditingPost] = useState(null);
 
-  console.log(initialPosts);
-
   useEffect(() => {
     if (initialPosts.length > 0) {
       dispatch(setPosts(initialPosts));

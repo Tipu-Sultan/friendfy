@@ -200,13 +200,13 @@ const postSlice = createSlice({
 
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
-      console.log("userss", postId )
     
-      state.posts = state.posts.map((post) => {
+      console.log("Post ID being liked:", postId);
+      console.log("Before update:", JSON.stringify(state.posts, null, 2));
+    
+      const updatedPosts = state.posts.map((post) => {
         if (post._id === postId) {
           const isLiked = post.likes.includes(userId);
-
-          console.log('userId', postId )
           return {
             ...post,
             likes: isLiked
@@ -216,7 +216,12 @@ const postSlice = createSlice({
         }
         return post;
       });
+    
+      state.posts = [...updatedPosts]; // Ensure immutability
+    
+      console.log("After update:", JSON.stringify(state.posts, null, 2));
     },
+    
 
     updatePostComment: (state, action) => {
       const { postId, comment } = action.payload; // Expecting full comment object from server
