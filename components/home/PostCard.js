@@ -23,11 +23,15 @@ import {
 import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
+import { getAblyClient } from "@/server/ablyClient";
 
-export default function PostCard({setEditingPost, post, postChannel, user }) {
+export default function PostCard({ setEditingPost, post, user }) {
   const dispatch = useDispatch();
+
+  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
+  const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
   const [showComments, setShowComments] = useState(false);
-  const [showReportModal,setReportModal] = useState(false)
+  const [showReportModal, setReportModal] = useState(false);
 
   const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -59,7 +63,7 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
 
     // Listen for like updates
     postChannel.subscribe("like-post", (post) => {
-      console.log(post)
+      console.log(post);
       dispatch(
         updateLikeIntoPost({
           postId: post.data.postId,
@@ -82,8 +86,6 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
     };
   }, [dispatch, postChannel, post._id]);
 
-  
-
   return (
     <Card className="mb-6 max-w-lg mx-auto">
       <div className="p-4">
@@ -102,7 +104,7 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
               <h3 className="font-semibold">{post?.user?.username}</h3>
               <p className="text-xs text-muted-foreground">
                 {new Date(post?.createdAt).toLocaleString()}
-                <span>{post.isEdited &&" Edited"}</span>
+                <span>{post.isEdited && " Edited"}</span>
               </p>
             </div>
           </div>
@@ -114,7 +116,9 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={()=>setReportModal(true)}>Report</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setReportModal(true)}>
+                Report
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {/* Only show Delete & Edit options for the post owner */}
               {post?.user?._id === user?.id && (
@@ -138,7 +142,11 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
         </div>
 
         {renderMedia(fileTypes, post)}
-        {post.isEdited && <span className="text-xs">Edited: {new Date(post?.updatedAt).toLocaleString()}</span>}
+        {post.isEdited && (
+          <span className="text-xs">
+            Edited: {new Date(post?.updatedAt).toLocaleString()}
+          </span>
+        )}
 
         <div className="flex items-center space-x-4 mt-4">
           <Button onClick={handleLikePost} variant="ghost" size="sm">
@@ -165,7 +173,7 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
       </div>
       {showComments && (
         <CommentModal
-          commentChannel={channel}
+          commentChannel={postChannel}
           currentUser={user}
           userId={user?.id}
           currectPost={post}
@@ -177,7 +185,7 @@ export default function PostCard({setEditingPost, post, postChannel, user }) {
 
       {showReportModal && (
         <ReportModal
-          commentChannel={channel}
+          commentChannel={postChannel}
           showModal={showReportModal}
           setShowModal={setReportModal}
           postId={post._id}

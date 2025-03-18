@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
-import { getAblyClient } from "@/lib/ablyClient";
 import { useUser } from "@/hooks/useUser";
 
 const Home = ({ posts: initialPosts }) => {
@@ -15,9 +14,6 @@ const Home = ({ posts: initialPosts }) => {
   const [loading, setLoading] = useState(true); // Track API loading state
   const { user } = useUser();
   const [editingPost ,setEditingPost ] = useState(null);
-
-  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
-  const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
 
   useEffect(() => {
     if (initialPosts.length > 0) {
@@ -75,7 +71,7 @@ const Home = ({ posts: initialPosts }) => {
         ) : (
           // Display Posts
           posts.map((post) => (
-            <PostCard setEditingPost={setEditingPost} postChannel={postChannel} user={user} key={post._id} post={post} />
+            <PostCard setEditingPost={setEditingPost} user={user} key={post._id} post={post} />
           ))
         )}
       </div>
