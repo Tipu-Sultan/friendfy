@@ -200,17 +200,20 @@ const postSlice = createSlice({
 
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
-
-      state.posts = state.posts.map((post) =>
-        post._id === postId
-          ? {
-              ...post, // Ensure other properties of the post are retained
-              likes: post.likes.includes(userId)
-                ? post.likes.filter((id) => id !== userId)
-                : [...post.likes, userId],
-            }
-          : post
-      );
+    
+      state.posts = state.posts.map((post) => {
+        if (post._id === postId) {
+          const isLiked = post.likes.includes(userId);
+    
+          return {
+            ...post,
+            likes: isLiked
+              ? post.likes.filter((id) => id !== userId) // Unlike
+              : [...post.likes, userId], // Like
+          };
+        }
+        return post;
+      });
     },
 
     updatePostComment: (state, action) => {
@@ -293,7 +296,7 @@ const postSlice = createSlice({
   
   
     addNewPost(state, action) {
-      state.posts.unshift(action.payload);
+      state.posts.push(action.payload);
     },
 
     updateExistingPost: (state, action) => {

@@ -5,13 +5,11 @@ import useFollowStatus from "@/hooks/useFollowStatus";
 import { acceptFollowRequest, removeFollowRequest, sendFollowRequest } from "@/redux/slices/FollowSlice";
 import { useDispatch } from "react-redux";
 import useFollowSocket from "@/hooks/useFollowSocket";
-import { getAblyClient } from "@/lib/ablyClient";
 
 
-const FollowButton = ({ suggestion, user}) => {
+const FollowButton = ({ suggestion, user,ablyClient}) => {
     const dispatch = useDispatch();
 
-    const ablyClient = getAblyClient(user?.id);
       const channelName = `follow-${[suggestion._id, user?.id].sort().join("-")}`;
       const userChannel = ablyClient?.channels?.get(channelName);
     const { isFollowed, isRequested } = useFollowStatus();

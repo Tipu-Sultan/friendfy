@@ -4,10 +4,9 @@ import { createPost, updatePost, setPostFormData, addNewPost, updateExistingPost
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
 
-const usePosts = (editingPost = null,setEditingPost) => {
+const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const ablyClient = getAblyClient(user?.id);
   const postChannel = ablyClient?.channels.get("add-post-actions");
 
   const { posts, isLoading, postFormData } = useSelector((state) => state.posts);

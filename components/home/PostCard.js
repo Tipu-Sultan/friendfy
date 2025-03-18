@@ -23,12 +23,9 @@ import {
 import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
-import { getAblyClient } from "@/server/ablyClient";
 
-export default function PostCard({ setEditingPost, post, user }) {
+export default function PostCard({ setEditingPost, post, user,ablyClient}) {
   const dispatch = useDispatch();
-
-  const ablyClient = getAblyClient(user?.id); // Get Ably client instance
   const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
   const [showComments, setShowComments] = useState(false);
   const [showReportModal, setReportModal] = useState(false);
@@ -37,15 +34,14 @@ export default function PostCard({ setEditingPost, post, user }) {
 
   const handleLikePost = async () => {
     if (!postChannel) return;
-
+  
     // Publish like event to Ably
     postChannel.publish("like-post", { postId: post._id, userId: user.id });
-
-    // Update Redux state
-    await dispatch(
-      likeOrUnlikePost({ postId: post._id, userId: user?.id })
-    ).unwrap();
+  
+    // Dispatch like/unlike action
+    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user.id })).unwrap();
   };
+  
 
   const handleDeletePost = async () => {
     if (!postChannel) return;
@@ -62,20 +58,14 @@ export default function PostCard({ setEditingPost, post, user }) {
     if (!postChannel) return;
 
     // Listen for like updates
-    postChannel.subscribe("like-post", (post) => {
-      console.log(post);
-      dispatch(
-        updateLikeIntoPost({
-          postId: post.data.postId,
-          userId: post.data.userId,
-        })
-      );
+    postChannel.subscribe("like-post", (message) => {
+      dispatch(updateLikeIntoPost(message.data));
     });
 
     // Listen for post deletions
-    postChannel.subscribe("delete-post", (post) => {
-      if (post.data?.postId) {
-        dispatch(updateDeletePost({ postId: post.data.postId })); // Dispatch action to remove post
+    postChannel.subscribe("delete-post", (postData) => {
+      if (postData.data?.postId) {
+        dispatch(updateDeletePost({ postId: postData.data.postId })); // Dispatch action to remove post
       }
     });
 
@@ -84,7 +74,7 @@ export default function PostCard({ setEditingPost, post, user }) {
       postChannel.unsubscribe("like-post");
       postChannel.unsubscribe("delete-post");
     };
-  }, [dispatch, postChannel, post._id]);
+  }, [dispatch, postChannel]);
 
   return (
     <Card className="mb-6 max-w-lg mx-auto">

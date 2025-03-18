@@ -7,30 +7,39 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
 import { useUser } from "@/hooks/useUser";
+import { getAblyClient } from "@/lib/ablyClient";
 
 const Home = ({ posts: initialPosts }) => {
   const dispatch = useDispatch();
   const { posts } = useSelector((state) => state.posts);
   const [loading, setLoading] = useState(true); // Track API loading state
   const { user } = useUser();
-  const [editingPost ,setEditingPost ] = useState(null);
+  const ablyClient = getAblyClient(user?.id);
+
+  const [editingPost, setEditingPost] = useState(null);
+
+  console.log(initialPosts);
 
   useEffect(() => {
     if (initialPosts.length > 0) {
       dispatch(setPosts(initialPosts));
     }
     setTimeout(() => setLoading(false), 1000); // Simulating API delay
-  }, [dispatch, initialPosts,]);
+  }, [dispatch, initialPosts]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8 lg:px-16">
       {/* Left Section */}
       <div className="lg:col-span-2 mx-auto w-full max-w-[550px]">
-        <AddPostSection editingPost={editingPost} setEditingPost={setEditingPost}/>
+        <AddPostSection
+          editingPost={editingPost}
+          setEditingPost={setEditingPost}
+          ablyClient={ablyClient}
+        />
 
         {/* Friend Suggestions (Mobile Only) */}
         <div className="lg:hidden md:block py-4">
-          <FriendSuggestions />
+          <FriendSuggestions ablyClient={ablyClient} />
         </div>
 
         {/* Loading Skeleton */}
@@ -70,15 +79,24 @@ const Home = ({ posts: initialPosts }) => {
           </div>
         ) : (
           // Display Posts
-          posts.map((post) => (
-            <PostCard setEditingPost={setEditingPost} user={user} key={post._id} post={post} />
-          ))
+          posts
+            .slice()
+            .reverse()
+            .map((post) => (
+              <PostCard
+                setEditingPost={setEditingPost}
+                user={user}
+                key={post._id}
+                post={post}
+                ablyClient={ablyClient}
+              />
+            ))
         )}
       </div>
 
       {/* Right Section (Desktop Only) */}
       <div className="hidden lg:block sticky top-20">
-        <FriendSuggestions />
+        <FriendSuggestions ablyClient={ablyClient} />
       </div>
     </div>
   );

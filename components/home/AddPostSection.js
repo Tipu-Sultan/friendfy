@@ -9,7 +9,7 @@ import usePosts from "@/hooks/usePosts";
 import { Progress } from "../ui/progress";
 
 
-export default function AddPostSection({editingPost,setEditingPost}) {
+export default function AddPostSection({editingPost,setEditingPost,ablyClient}) {
   const {
     isLoading,
     content,
@@ -22,7 +22,7 @@ export default function AddPostSection({editingPost,setEditingPost}) {
     handleMediaChange,
     handlePostSubmit,
     isEditing,
-  } = usePosts(editingPost,setEditingPost);
+  } = usePosts(editingPost,setEditingPost,ablyClient);
 
 
   return (

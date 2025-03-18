@@ -1,50 +1,53 @@
 "use client";
 
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Search, UserPlus, UserMinus, Users, Handshake } from 'lucide-react';
-import useFollowStatus from '@/hooks/useFollowStatus';
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Search, UserPlus, UserMinus, Users, Handshake } from "lucide-react";
 import useFetchFriends from "@/hooks/useFetchFriends";
-import FollowButton from '@/components/home/FollowButton';
-import useFollowSocket from '@/hooks/useFollowSocket';
-import Link from 'next/link';
-import { useUser } from '@/hooks/useUser';
+import FollowButton from "@/components/home/FollowButton";
+import Link from "next/link";
+import { useUser } from "@/hooks/useUser";
+import { getAblyClient } from "@/lib/ablyClient";
 
 export default function Friends() {
   const { user } = useUser();
+  const ablyClient = getAblyClient(user?.id);
 
   const { suggestedFriends } = useFetchFriends();
-  const [activeTab, setActiveTab] = useState('followers');
-
+  const [activeTab, setActiveTab] = useState("followers");
 
   // Find users you are following (where userId === user._id)
   const following = suggestedFriends.filter(
-    (follow) => follow?.follows?.userId === user?.id && follow?.follows?.status === "confirmed"
+    (follow) =>
+      follow?.follows?.userId === user?.id &&
+      follow?.follows?.status === "confirmed"
   );
 
   // Find users who are following you (where targetUserId === user._id)
   const followers = suggestedFriends.filter(
-    (follow) => follow?.follows?.targetUserId === user?.id && follow?.follows?.status === "confirmed"
+    (follow) =>
+      follow?.follows?.targetUserId === user?.id &&
+      follow?.follows?.status === "confirmed"
   );
 
   // Find users who are suggested (not already in followers or following)
   const suggestions = suggestedFriends.filter(
     (suggestion) =>
-      suggestion?.follows?.status !== "confirmed" || suggestion?.follows?.status === "requested"&& 
-      suggestion?.follows?.userId !== user?.id &&
-      suggestion?.follows?.targetUserId !== user?.id
+      suggestion?.follows?.status !== "confirmed" ||
+      (suggestion?.follows?.status === "requested" &&
+        suggestion?.follows?.userId !== user?.id &&
+        suggestion?.follows?.targetUserId !== user?.id)
   );
 
   // Find users who have requested to follow you but you haven't confirmed yet
   const requested = suggestedFriends.filter(
-    (request) => 
+    (request) =>
       request?.follows?.status === "requested" &&
       request?.follows?.targetUserId === user?.id
   );
-
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -61,7 +64,7 @@ export default function Friends() {
           <TabsTrigger
             value="followers"
             className="flex items-center gap-2"
-            onClick={() => setActiveTab('followers')}
+            onClick={() => setActiveTab("followers")}
           >
             <Users className="h-4 w-4" />
             Followers
@@ -69,7 +72,7 @@ export default function Friends() {
           <TabsTrigger
             value="following"
             className="flex items-center gap-2"
-            onClick={() => setActiveTab('following')}
+            onClick={() => setActiveTab("following")}
           >
             <UserPlus className="h-4 w-4" />
             Following
@@ -77,7 +80,7 @@ export default function Friends() {
           <TabsTrigger
             value="suggestions"
             className="flex items-center gap-2"
-            onClick={() => setActiveTab('suggestions')}
+            onClick={() => setActiveTab("suggestions")}
           >
             <UserMinus className="h-4 w-4" />
             Suggestions
@@ -85,7 +88,7 @@ export default function Friends() {
           <TabsTrigger
             value="Requested"
             className="flex items-center gap-2"
-            onClick={() => setActiveTab('Requested')}
+            onClick={() => setActiveTab("Requested")}
           >
             <Handshake className="h-4 w-4" />
             Requested
@@ -97,25 +100,22 @@ export default function Friends() {
             {followers?.map((follower) => (
               <Card key={follower._id} className="p-4">
                 <div className="flex items-center justify-between">
-                <Link href={`/profile/${follower?.username}`}>
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={follower.profilePicture}
-                      alt={follower.username}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{follower.username}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {follower.username}
-                      </p>
+                  <Link href={`/profile/${follower?.username}`}>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={follower.profilePicture}
+                        alt={follower.username}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{follower.username}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {follower.username}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   </Link>
-                  <FollowButton
-                    suggestion={follower}
-                    user={user}
-                  />
+                  <FollowButton ablyClient={ablyClient} suggestion={follower} user={user} />
                 </div>
               </Card>
             ))}
@@ -127,25 +127,22 @@ export default function Friends() {
             {following?.map((follow) => (
               <Card key={follow._id} className="p-4">
                 <div className="flex items-center justify-between">
-                <Link href={`/profile/${follow?.username}`}>
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={follow.profilePicture}
-                      alt={follow.username}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{follow.username}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {follow.username}
-                      </p>
+                  <Link href={`/profile/${follow?.username}`}>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={follow.profilePicture}
+                        alt={follow.username}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{follow.username}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {follow.username}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   </Link>
-                  <FollowButton
-                    suggestion={follow}
-                    user={user}
-                  />
+                  <FollowButton ablyClient={ablyClient} suggestion={follow} user={user} />
                 </div>
               </Card>
             ))}
@@ -157,25 +154,22 @@ export default function Friends() {
             {suggestions.map((suggestion) => (
               <Card key={suggestion._id} className="p-4">
                 <div className="flex items-center justify-between">
-                <Link href={`/profile/${suggestion?.username}`}>
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={suggestion.profilePicture}
-                      alt={suggestion.username}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{suggestion.username}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {0} mutual friends
-                      </p>
+                  <Link href={`/profile/${suggestion?.username}`}>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={suggestion.profilePicture}
+                        alt={suggestion.username}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{suggestion.username}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {0} mutual friends
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   </Link>
-                  <FollowButton
-                    suggestion={suggestion}
-                    user={user}
-                  />
+                  <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
                 </div>
               </Card>
             ))}
@@ -187,25 +181,22 @@ export default function Friends() {
             {requested?.map((suggestion) => (
               <Card key={suggestion._id} className="p-4">
                 <div className="flex items-center justify-between">
-                <Link href={`/profile/${suggestion?.username}`}>
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={suggestion.profilePicture}
-                      alt={suggestion.username}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{suggestion.username}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {0} mutual friends
-                      </p>
+                  <Link href={`/profile/${suggestion?.username}`}>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={suggestion.profilePicture}
+                        alt={suggestion.username}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{suggestion.username}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {0} mutual friends
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   </Link>
-                  <FollowButton
-                    suggestion={suggestion}
-                    user={user}
-                  />
+                  <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
                 </div>
               </Card>
             ))}
