@@ -24,7 +24,7 @@ import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
 
-export default function PostCard({ setEditingPost, post, user,ablyClient}) {
+export default function PostCard({ setEditingPost, post, user, ablyClient }) {
   const dispatch = useDispatch();
   const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
   const [showComments, setShowComments] = useState(false);
@@ -35,15 +35,15 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
   const handleLikePost = async () => {
     if (!postChannel) return;
 
-  
     // Publish like event to Ably
     postChannel.publish("like-post", { postId: post._id, userId: user.id });
 
-    console.log("like-post", { postId: post._id, userId: user.id })
+    console.log("like-post", { postId: post._id, userId: user.id });
     // Dispatch like/unlike action
-    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user.id })).unwrap();
+    await dispatch(
+      likeOrUnlikePost({ postId: post._id, userId: user.id })
+    ).unwrap();
   };
-  
 
   const handleDeletePost = async () => {
     if (!postChannel) return;
@@ -61,7 +61,7 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
 
     // Listen for like updates
     postChannel.subscribe("like-post", (message) => {
-    console.log("like-post", message.data)
+      console.log("like-post", message.data);
 
       dispatch(updateLikeIntoPost(message.data));
     });
@@ -146,11 +146,15 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
           <Button onClick={handleLikePost} variant="ghost" size="sm">
             <Heart
               className={`w-5 h-5 ${
-                post.likes.includes(user?.id) ? "text-red-600" : ""
+                post.likes.includes(user?.id) ? "text-red-600" : "text-gray-400"
               }`}
             />
             <span>{post?.likes?.length}</span>
           </Button>
+
+          {/* Debug UI updates */}
+          <p>Likes: {JSON.stringify(post.likes)}</p>
+
           <Button
             onClick={() => setShowComments(true)}
             variant="ghost"

@@ -200,11 +200,13 @@ const postSlice = createSlice({
 
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
+      console.log("userss", postId )
     
       state.posts = state.posts.map((post) => {
         if (post._id === postId) {
           const isLiked = post.likes.includes(userId);
-    
+
+          console.log('userId', postId )
           return {
             ...post,
             likes: isLiked
