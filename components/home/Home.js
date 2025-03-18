@@ -17,7 +17,7 @@ const Home = ({ posts: initialPosts }) => {
   const [editingPost ,setEditingPost ] = useState(null);
 
   const ablyClient = getAblyClient(user?.id); // Get Ably client instance
-  const channel = ablyClient?.channels.get("post-actions"); // Get the channel
+  const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
 
   useEffect(() => {
     if (initialPosts.length > 0) {
@@ -75,7 +75,7 @@ const Home = ({ posts: initialPosts }) => {
         ) : (
           // Display Posts
           posts.map((post) => (
-            <PostCard setEditingPost={setEditingPost} channel={channel} user={user} key={post._id} post={post} />
+            <PostCard setEditingPost={setEditingPost} postChannel={postChannel} user={user} key={post._id} post={post} />
           ))
         )}
       </div>
