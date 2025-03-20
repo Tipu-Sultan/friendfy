@@ -9,6 +9,7 @@ import ClientProvider from './ClientProvider';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { OnlineUsersProvider } from '@/context/OnlineUsersContext';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,6 +29,7 @@ export default async function RootLayout({ children }) {
         <ClientProvider
         >
           <div className="min-h-screen bg-background">
+          <Toaster/>
           {session && <Sidebar />}
           {session && <Topbar />}
           <OnlineUsersProvider userId={session?.user?.id}>

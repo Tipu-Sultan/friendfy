@@ -14,13 +14,12 @@ import {
 import renderMedia from "@/utils/renderMedia";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
-import usePostCard from "@/hooks/usePostCard";
+import { ConfirmAlertDialog } from "../ui-modols/ConfirmAlertDialog";
 
-export default function PostCard({ 
+export default function PostCard({
   user,
   post,
   setEditingPost,
-  // Props from usePostCard
   fileTypes,
   showComments,
   showReportModal,
@@ -28,9 +27,7 @@ export default function PostCard({
   setReportModal,
   handleDeletePost,
   handleLikePost,
-
 }) {
-
   const isPostOwner = post?.user?._id === user?.id;
 
   return (
@@ -65,16 +62,23 @@ export default function PostCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setReportModal(true)}>Report</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setReportModal(true)}>
+                Report
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {isPostOwner && (
                 <>
-                  <DropdownMenuItem onClick={() => setEditingPost(post)} className="text-blue-600">
+                  <DropdownMenuItem
+                    onClick={() => setEditingPost(post)}
+                    className="text-blue-600"
+                  >
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeletePost(post?._id)} className="text-red-600">
-                    Delete
-                  </DropdownMenuItem>
+
+                  <ConfirmAlertDialog
+                    triggerText="Delete"
+                    onConfirm={() => handleDeletePost(post?._id)}
+                  />
                 </>
               )}
             </DropdownMenuContent>
@@ -85,15 +89,31 @@ export default function PostCard({
         {renderMedia(fileTypes, post)}
 
         {/* Edited Timestamp */}
-        {post.isEdited && <span className="text-xs">Edited: {new Date(post?.updatedAt).toLocaleString()}</span>}
+        {post.isEdited && (
+          <span className="text-xs">
+            Edited: {new Date(post?.updatedAt).toLocaleString()}
+          </span>
+        )}
 
         {/* Post Actions */}
         <div className="flex items-center space-x-4 mt-4">
-          <Button onClick={() => handleLikePost(post?._id)} variant="ghost" size="sm">
-            <Heart className={`w-5 h-5 ${post.likes.includes(user?.id) ? "text-red-600" : ""}`} />
+          <Button
+            onClick={() => handleLikePost(post?._id)}
+            variant="ghost"
+            size="sm"
+          >
+            <Heart
+              className={`w-5 h-5 ${
+                post.likes.includes(user?.id) ? "text-red-600" : ""
+              }`}
+            />
             <span>{post?.likes?.length}</span>
           </Button>
-          <Button onClick={() => setShowComments(true)} variant="ghost" size="sm">
+          <Button
+            onClick={() => setShowComments(true)}
+            variant="ghost"
+            size="sm"
+          >
             <MessageCircle className="w-5 h-5" />
             <span>{post?.comments?.length}</span>
           </Button>

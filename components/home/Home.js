@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
 import { useUser } from "@/hooks/useUser";
 import usePostCard from "@/hooks/usePostCard";
-import useComments from "@/hooks/useComments";
 
 const Home = ({ posts: initialPosts }) => {
   const dispatch = useDispatch();
@@ -21,12 +20,12 @@ const Home = ({ posts: initialPosts }) => {
   const {
     postChannel,
     fileTypes,
-    showComments, 
-    showReportModal, 
+    showComments,
+    showReportModal,
     setShowComments,
     setReportModal,
     handleDeletePost,
-    handleLikePost
+    handleLikePost,
   } = usePostCard();
 
   useEffect(() => {
@@ -41,8 +40,8 @@ const Home = ({ posts: initialPosts }) => {
       {/* Left Section */}
       <div className="lg:col-span-2 mx-auto w-full max-w-[550px]">
         <AddPostSection
-        editingPost={editingPost}
-        setEditingPost={setEditingPost}
+          editingPost={editingPost}
+          setEditingPost={setEditingPost}
         />
 
         {/* Friend Suggestions (Mobile Only) */}
@@ -114,22 +113,18 @@ const Home = ({ posts: initialPosts }) => {
             .reverse()
             .map((post) => (
               <PostCard
-  key={post._id}
-  user={user}
-  post={post}
-  setEditingPost={setEditingPost}
-
-  // 🔹 Pass everything from usePostCard
-  postChannel={postChannel}
-  fileTypes={fileTypes}
-  showComments={showComments}
-  showReportModal={showReportModal}
-  setShowComments={setShowComments}
-  setReportModal={setReportModal}
-  handleDeletePost={handleDeletePost}
-  handleLikePost={handleLikePost}
-/>
-
+                key={post._id}
+                user={user}
+                post={post}
+                setEditingPost={setEditingPost}
+                fileTypes={fileTypes}
+                showComments={showComments}
+                showReportModal={showReportModal}
+                setShowComments={setShowComments}
+                setReportModal={setReportModal}
+                handleDeletePost={handleDeletePost}
+                handleLikePost={handleLikePost}
+              />
             ))
         )}
       </div>

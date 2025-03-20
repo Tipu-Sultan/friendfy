@@ -13,6 +13,7 @@ import {
 } from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
+import { toast } from "./use-toast";
 
 const usePosts = (editingPost, setEditingPost) => {
   const dispatch = useDispatch();
@@ -79,7 +80,7 @@ const usePosts = (editingPost, setEditingPost) => {
     e.preventDefault();
 
     if (!content && !selectedMedia) {
-      alert("Please provide content or select a media file.");
+      toast({ title: "Error", description: "Please provide content or select a media file." });
       return;
     }
 
@@ -108,11 +109,14 @@ const usePosts = (editingPost, setEditingPost) => {
             updatedFields: response.updatedFields,
             postId,
           });
+          toast({ title: "Post Updated", description: "Your post has been successfully updated." });
+
         } else {
           postChannel?.publish("new-post", {
             userId: user.id,
             post: response.post,
           });
+          toast({ title: "Post Updated", description: "Your post has been successfully published." });
         }
 
         setUploadProgress(100);
@@ -122,11 +126,11 @@ const usePosts = (editingPost, setEditingPost) => {
       }
     } catch (error) {
       console.error("Error submitting post:", error);
-      alert("Failed to save post. Please try again.");
+      toast({ title: "Error",variant: "destructive", description: "Failed to save post. Please try again." });
+
       setUploadProgress(0);
     }
   };
-
 
   useEffect(() => {
     if (!postChannel) return;
