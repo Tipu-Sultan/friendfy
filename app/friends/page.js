@@ -10,11 +10,9 @@ import useFetchFriends from "@/hooks/useFetchFriends";
 import FollowButton from "@/components/home/FollowButton";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
-import { getAblyClient } from "@/lib/ablyClient";
 
 export default function Friends() {
   const { user } = useUser();
-  const ablyClient = getAblyClient(user?.id);
 
   const { suggestedFriends } = useFetchFriends();
   const [activeTab, setActiveTab] = useState("followers");
@@ -115,7 +113,7 @@ export default function Friends() {
                       </div>
                     </div>
                   </Link>
-                  <FollowButton ablyClient={ablyClient} suggestion={follower} user={user} />
+                  <FollowButton suggestion={follower} user={user} />
                 </div>
               </Card>
             ))}
@@ -142,7 +140,7 @@ export default function Friends() {
                       </div>
                     </div>
                   </Link>
-                  <FollowButton ablyClient={ablyClient} suggestion={follow} user={user} />
+                  <FollowButton  suggestion={follow} user={user} />
                 </div>
               </Card>
             ))}
@@ -169,7 +167,7 @@ export default function Friends() {
                       </div>
                     </div>
                   </Link>
-                  <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
+                  <FollowButton  suggestion={suggestion} user={user} />
                 </div>
               </Card>
             ))}
@@ -196,7 +194,7 @@ export default function Friends() {
                       </div>
                     </div>
                   </Link>
-                  <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
+                  <FollowButton suggestion={suggestion} user={user} />
                 </div>
               </Card>
             ))}

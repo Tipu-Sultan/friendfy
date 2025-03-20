@@ -19,9 +19,9 @@ export const createPost = createAsyncThunk(
 // Async thunk for updating a post
 export const updatePost = createAsyncThunk(
   "posts/updatePost",
-  async ({ postId, updatedData }, { rejectWithValue }) => {
+  async ({ updatedData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/post/index/${postId}`, updatedData, {
+      const response = await axios.put(`/api/post/index`, updatedData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -88,8 +88,7 @@ export const addReply = createAsyncThunk(
       });
 
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to add reply");
+      if (!response.ok) throw new Error(data.message || "Failed to add reply");
 
       return { postId, commentId, reply: data.reply };
     } catch (error) {
@@ -119,9 +118,12 @@ export const deleteReply = createAsyncThunk(
   "comments/deleteReply",
   async ({ postId, commentId, replyId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/post/${postId}/comment/${commentId}/reply/${replyId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/post/${postId}/comment/${commentId}/reply/${replyId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to delete reply");
       return { postId, commentId, replyId };
@@ -200,10 +202,10 @@ const postSlice = createSlice({
 
     updateLikeIntoPost: (state, action) => {
       const { userId, postId } = action.payload;
-    
+        
       const updatedPosts = state.posts.map((post) => {
         if (post._id === postId) {
-          const isLiked = post.likes.includes(userId);
+          const isLiked = post.likes.includes(userId);    
           return {
             ...post,
             likes: isLiked
@@ -216,6 +218,7 @@ const postSlice = createSlice({
     
       state.posts = [...updatedPosts]; // Ensure immutability
     
+      console.log("After update:", JSON.parse(JSON.stringify(state.posts))); // Deep copy to avoid reference issues
     },
     
 
@@ -237,67 +240,70 @@ const postSlice = createSlice({
 
     updatePostAfterDeleteComment: (state, action) => {
       const { postId, commentId } = action.payload;
-  
-      return {
-          ...state,
-          posts: state.posts.map(post =>
-              post._id === postId
-                  ? {
-                      ...post,
-                      comments: post.comments.filter(comment => comment._id !== commentId) // Remove deleted comment
-                  }
-                  : post
-          )
-      };
-  },
 
-  updatePostReply: (state, action) => {
-    const { postId, commentId, reply } = action.payload;
-  
-    return {
-      ...state,
-      posts: state.posts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              comments: post.comments.map((comment) =>
-                comment._id === commentId
-                  ? {
-                      ...comment,
-                      replies: [...comment.replies, reply], // Add reply to correct comment
-                    }
-                  : comment
-              ),
-            }
-          : post
-      ),
-    };
-  },
-  
-  updatePostAfterDeleteReply: (state, action) => {
-    const { postId, commentId, replyId } = action.payload;
-  
-    return {
-      ...state,
-      posts: state.posts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              comments: post.comments.map((comment) =>
-                comment._id === commentId
-                  ? {
-                      ...comment,
-                      replies: comment.replies.filter(reply => reply._id !== replyId) // Remove deleted reply
-                    }
-                  : comment
-              ),
-            }
-          : post
-      ),
-    };
-  },
-  
-  
+      return {
+        ...state,
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: post.comments.filter(
+                  (comment) => comment._id !== commentId
+                ), // Remove deleted comment
+              }
+            : post
+        ),
+      };
+    },
+
+    updatePostReply: (state, action) => {
+      const { postId, commentId, reply } = action.payload;
+
+      return {
+        ...state,
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: post.comments.map((comment) =>
+                  comment._id === commentId
+                    ? {
+                        ...comment,
+                        replies: [...comment.replies, reply], // Add reply to correct comment
+                      }
+                    : comment
+                ),
+              }
+            : post
+        ),
+      };
+    },
+
+    updatePostAfterDeleteReply: (state, action) => {
+      const { postId, commentId, replyId } = action.payload;
+
+      return {
+        ...state,
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: post.comments.map((comment) =>
+                  comment._id === commentId
+                    ? {
+                        ...comment,
+                        replies: comment.replies.filter(
+                          (reply) => reply._id !== replyId
+                        ), // Remove deleted reply
+                      }
+                    : comment
+                ),
+              }
+            : post
+        ),
+      };
+    },
+
     addNewPost(state, action) {
       state.posts.push(action.payload);
     },
@@ -305,12 +311,11 @@ const postSlice = createSlice({
     updateExistingPost: (state, action) => {
       const { postId, updatedFields } = action.payload;
       const index = state.posts.findIndex((post) => post._id === postId);
-      
+
       if (index !== -1) {
         state.posts[index] = { ...state.posts[index], ...updatedFields }; // Merge updated fields
       }
     },
-    
 
     setPosts(state, action) {
       state.posts = action.payload;

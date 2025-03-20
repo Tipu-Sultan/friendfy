@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createPost, updatePost, setPostFormData, addNewPost, updateExistingPost } from "@/redux/slices/postSlice";
+import {
+  createPost,
+  updatePost,
+  setPostFormData,
+  addNewPost,
+  updateExistingPost,
+  likeOrUnlikePost,
+  deletePost,
+  updateLikeIntoPost,
+  updateDeletePost,
+} from "@/redux/slices/postSlice";
 import { useUser } from "./useUser";
 import { getAblyClient } from "@/lib/ablyClient";
 
-const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
+const usePosts = (editingPost, setEditingPost) => {
   const dispatch = useDispatch();
   const { user } = useUser();
-  const postChannel = ablyClient?.channels.get("add-post-actions");
-
+  const ablyClient = getAblyClient(user?.id);
+  const postChannel = ablyClient?.channels?.get("add-post-actions");
   const { posts, isLoading, postFormData } = useSelector((state) => state.posts);
+  
   const { content, contentType } = postFormData;
 
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -18,24 +29,29 @@ const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
   const [isEditing, setIsEditing] = useState(false);
   const [postId, setPostId] = useState(null);
 
-
   useEffect(() => {
     if (editingPost) {
       setIsEditing(true);
       setPostId(editingPost._id);
-      dispatch(setPostFormData({ 
-        content: editingPost.content || "", 
+
+      dispatch(setPostFormData({
+        content: editingPost.content || "",
         contentType: editingPost.contentType || "",
       }));
+
       setMediaPreview(editingPost.mediaUrl || null);
-    } else {
-      setIsEditing(false);
-      setPostId(null);
-      dispatch(setPostFormData({ content: "", contentType: "" }));
-      setMediaPreview(null);
     }
   }, [editingPost, dispatch]);
-  
+
+  const resetForm = () => {
+    setIsEditing(false);
+    setPostId(null);
+    setEditingPost(null);
+    setSelectedMedia(null);
+    setMediaPreview(null);
+    setUploadProgress(0);
+    dispatch(setPostFormData({ content: "", contentType: "" }));
+  };
 
   const handleContentChange = (e) => {
     dispatch(setPostFormData({ content: e.target.value }));
@@ -80,26 +96,29 @@ const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
 
       let response;
       if (isEditing && postId) {
-        response = await dispatch(updatePost({postId,updatedData: formData })).unwrap();
+        response = await dispatch(updatePost({ updatedData: formData })).unwrap();
       } else {
         response = await dispatch(createPost(formData)).unwrap();
       }
 
       if (response.status === 201 || response.status === 200) {
-        isEditing && postId?
-        postChannel?.publish("update-post", { userId: user.id, updatedFields: response.updatedFields, postId }):
-        postChannel?.publish("new-post",{ userId: user.id, post: response.post })
-
+        if (isEditing && postId) {
+          postChannel?.publish("update-post", {
+            userId: user.id,
+            updatedFields: response.updatedFields,
+            postId,
+          });
+        } else {
+          postChannel?.publish("new-post", {
+            userId: user.id,
+            post: response.post,
+          });
+        }
 
         setUploadProgress(100);
         setTimeout(() => setUploadProgress(0), 500);
 
-        dispatch(setPostFormData({ content: "", file: null, contentType: "" }));
-        setSelectedMedia(null);
-        setMediaPreview(null);
-        setIsEditing(false);
-        setPostId(null);
-        setEditingPost(null)
+        resetForm();
       }
     } catch (error) {
       console.error("Error submitting post:", error);
@@ -108,37 +127,32 @@ const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
     }
   };
 
+
   useEffect(() => {
     if (!postChannel) return;
 
-    // Subscribe to new posts
-    const subscribeToPosts = async () => {
-      await postChannel.subscribe("new-post", (message) => {
-        const newPost = message.data.post;
-        dispatch(addNewPost(newPost)); // Add to Redux store
-      });
+    const handleNewPost = (message) => {
+      const newPost = message.data.post;
+      dispatch(addNewPost(newPost));
     };
 
-    subscribeToPosts();
-
-     // Subscribe to new posts
-     const updatePost = async () => {
-      await postChannel.subscribe("update-post", (message) => {
-        const { updatedFields, postId } = message.data;
-        dispatch(updateExistingPost({ postId, updatedFields })); // Dispatch update
-      });
+    const handleUpdatePost = (message) => {
+      const { updatedFields, postId } = message.data;
+      dispatch(updateExistingPost({ postId, updatedFields }));
     };
-    
 
-    updatePost();
+    postChannel.subscribe("new-post", handleNewPost);
+    postChannel.subscribe("update-post", handleUpdatePost);
 
     return () => {
-      postChannel.unsubscribe("new-post"); // Cleanup on unmount
-      postChannel.unsubscribe("update-post"); // Cleanup on unmount
+      postChannel.unsubscribe("new-post", handleNewPost);
+      postChannel.unsubscribe("update-post", handleUpdatePost);
     };
   }, [postChannel, dispatch]);
 
   return {
+    postChannel,
+    posts,
     isLoading,
     content,
     contentType,
@@ -146,6 +160,8 @@ const usePosts = (editingPost = null,setEditingPost,ablyClient) => {
     selectedMedia,
     uploadProgress,
     isEditing,
+    editingPost, 
+    setEditingPost,
     handleContentChange,
     handleRemoveMedia,
     handleMediaChange,

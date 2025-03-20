@@ -11,71 +11,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEffect, useState } from "react";
 import renderMedia from "@/utils/renderMedia";
-import {
-  deletePost,
-  likeOrUnlikePost,
-  setPostFormData,
-  updateDeletePost,
-  updateLikeIntoPost,
-} from "@/redux/slices/postSlice";
-import { useDispatch } from "react-redux";
 import CommentModal from "../ui-modols/CommentModal";
 import ReportModal from "../ui-modols/ReportModal";
+import usePostCard from "@/hooks/usePostCard";
 
-export default function PostCard({ setEditingPost, post, user,ablyClient}) {
-  const dispatch = useDispatch();
-  const postChannel = ablyClient?.channels.get("post-actions"); // Get the channel
-  const [showComments, setShowComments] = useState(false);
-  const [showReportModal, setReportModal] = useState(false);
-  
-  const fileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+export default function PostCard({ 
+  user,
+  post,
+  setEditingPost,
+  // Props from usePostCard
+  fileTypes,
+  showComments,
+  showReportModal,
+  setShowComments,
+  setReportModal,
+  handleDeletePost,
+  handleLikePost,
 
-  const handleLikePost = async () => {
-    if (!postChannel) return;
-  
-    // Publish like event to Ably
-    postChannel.publish("like-post", { postId: post._id, userId: user.id });
-  
-    // Dispatch like/unlike action
-    await dispatch(likeOrUnlikePost({ postId: post._id, userId: user.id })).unwrap();
-  };
-  
-  const handleDeletePost = async () => {
-    if (!postChannel) return;
+}) {
 
-    const res = await dispatch(deletePost(post._id)).unwrap();
-
-    if (res.status === 200) {
-      postChannel.publish("delete-post", { postId: post._id });
-    }
-  };
-
-  useEffect(() => {
-    if (!postChannel) return;
-
-    const likeHandler = (message) => {
-        dispatch(updateLikeIntoPost(message.data));
-    };
-    
-    const deleteHandler = (postData) => {
-        dispatch(updateDeletePost({ postId: postData.data.postId }));
-    };
-
-    postChannel.subscribe("like-post", likeHandler);
-    postChannel.subscribe("delete-post", deleteHandler);
-
-    return () => {
-        postChannel.unsubscribe("like-post", likeHandler);
-        postChannel.unsubscribe("delete-post", deleteHandler);
-    };
-}, [postChannel, dispatch]);
-
+  const isPostOwner = post?.user?._id === user?.id;
 
   return (
     <Card className="mb-6 max-w-lg mx-auto">
       <div className="p-4">
+        {/* User Info & Actions */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <Avatar>
@@ -91,11 +52,12 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
               <h3 className="font-semibold">{post?.user?.username}</h3>
               <p className="text-xs text-muted-foreground">
                 {new Date(post?.createdAt).toLocaleString()}
-                <span>{post.isEdited && " Edited"}</span>
+                {post.isEdited && " • Edited"}
               </p>
             </div>
           </div>
 
+          {/* Dropdown Menu for Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -103,23 +65,14 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setReportModal(true)}>
-                Report
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setReportModal(true)}>Report</DropdownMenuItem>
               <DropdownMenuSeparator />
-              {/* Only show Delete & Edit options for the post owner */}
-              {post?.user?._id === user?.id && (
+              {isPostOwner && (
                 <>
-                  <DropdownMenuItem
-                    onClick={() => setEditingPost(post)}
-                    className="text-blue-600"
-                  >
+                  <DropdownMenuItem onClick={() => setEditingPost(post)} className="text-blue-600">
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleDeletePost}
-                    className="text-red-600"
-                  >
+                  <DropdownMenuItem onClick={() => handleDeletePost(post?._id)} className="text-red-600">
                     Delete
                   </DropdownMenuItem>
                 </>
@@ -128,27 +81,19 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
           </DropdownMenu>
         </div>
 
+        {/* Post Content */}
         {renderMedia(fileTypes, post)}
-        {post.isEdited && (
-          <span className="text-xs">
-            Edited: {new Date(post?.updatedAt).toLocaleString()}
-          </span>
-        )}
 
+        {/* Edited Timestamp */}
+        {post.isEdited && <span className="text-xs">Edited: {new Date(post?.updatedAt).toLocaleString()}</span>}
+
+        {/* Post Actions */}
         <div className="flex items-center space-x-4 mt-4">
-          <Button onClick={handleLikePost} variant="ghost" size="sm">
-            <Heart
-              className={`w-5 h-5 ${
-                post.likes.includes(user?.id) ? "text-red-600" : ""
-              }`}
-            />
+          <Button onClick={() => handleLikePost(post?._id)} variant="ghost" size="sm">
+            <Heart className={`w-5 h-5 ${post.likes.includes(user?.id) ? "text-red-600" : ""}`} />
             <span>{post?.likes?.length}</span>
           </Button>
-          <Button
-            onClick={() => setShowComments(true)}
-            variant="ghost"
-            size="sm"
-          >
+          <Button onClick={() => setShowComments(true)} variant="ghost" size="sm">
             <MessageCircle className="w-5 h-5" />
             <span>{post?.comments?.length}</span>
           </Button>
@@ -158,9 +103,10 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
           </Button>
         </div>
       </div>
+
+      {/* Comment Modal */}
       {showComments && (
         <CommentModal
-          commentChannel={postChannel}
           currentUser={user}
           userId={user?.id}
           currectPost={post}
@@ -170,9 +116,9 @@ export default function PostCard({ setEditingPost, post, user,ablyClient}) {
         />
       )}
 
+      {/* Report Modal */}
       {showReportModal && (
         <ReportModal
-          commentChannel={postChannel}
           showModal={showReportModal}
           setShowModal={setReportModal}
           postId={post._id}

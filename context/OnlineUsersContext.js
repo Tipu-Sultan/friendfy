@@ -34,7 +34,7 @@ export const OnlineUsersProvider = ({ children, userId }) => {
           });
         }
 
-        console.log(`✅ Connected: ${userId}`);
+        console.log(`✅ Conetxt Ably Connected: ${userId}`);
         await channel.presence.enter(userId);
 
         // Fetch existing online users

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 
 
-export default function FriendSuggestions({ablyClient}) {
+export default function FriendSuggestions() {
 
   const { user, } = useUser();
   const { suggestedFriends } = useFetchFriends();
@@ -42,7 +42,7 @@ export default function FriendSuggestions({ablyClient}) {
                     </div>
                   </Link>
 
-                  <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
+                  <FollowButton suggestion={suggestion} user={user} />
                 </div>
               )
           )}
@@ -73,7 +73,7 @@ export default function FriendSuggestions({ablyClient}) {
                         {suggestion.username}
                       </p>
                     </div>
-                    <FollowButton ablyClient={ablyClient} suggestion={suggestion} user={user} />
+                    <FollowButton suggestion={suggestion} user={user} />
                   </div>
                 </div>
               )

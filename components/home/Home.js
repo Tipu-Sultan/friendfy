@@ -8,16 +8,26 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setPosts } from "@/redux/slices/postSlice";
 import { useUser } from "@/hooks/useUser";
-import { getAblyClient } from "@/lib/ablyClient";
+import usePostCard from "@/hooks/usePostCard";
+import useComments from "@/hooks/useComments";
 
 const Home = ({ posts: initialPosts }) => {
   const dispatch = useDispatch();
   const { posts } = useSelector((state) => state.posts);
   const [loading, setLoading] = useState(true); // Track API loading state
   const { user } = useUser();
-  const ablyClient = getAblyClient(user?.id);
-
   const [editingPost, setEditingPost] = useState(null);
+
+  const {
+    postChannel,
+    fileTypes,
+    showComments, 
+    showReportModal, 
+    setShowComments,
+    setReportModal,
+    handleDeletePost,
+    handleLikePost
+  } = usePostCard();
 
   useEffect(() => {
     if (initialPosts.length > 0) {
@@ -31,9 +41,8 @@ const Home = ({ posts: initialPosts }) => {
       {/* Left Section */}
       <div className="lg:col-span-2 mx-auto w-full max-w-[550px]">
         <AddPostSection
-          editingPost={editingPost}
-          setEditingPost={setEditingPost}
-          ablyClient={ablyClient}
+        editingPost={editingPost}
+        setEditingPost={setEditingPost}
         />
 
         {/* Friend Suggestions (Mobile Only) */}
@@ -59,7 +68,7 @@ const Home = ({ posts: initialPosts }) => {
               </CardContent>
             </Card>
           ) : (
-            <FriendSuggestions ablyClient={ablyClient} />
+            <FriendSuggestions />
           )}
         </div>
 
@@ -105,12 +114,22 @@ const Home = ({ posts: initialPosts }) => {
             .reverse()
             .map((post) => (
               <PostCard
-                setEditingPost={setEditingPost}
-                user={user}
-                key={post._id}
-                post={post}
-                ablyClient={ablyClient}
-              />
+  key={post._id}
+  user={user}
+  post={post}
+  setEditingPost={setEditingPost}
+
+  // 🔹 Pass everything from usePostCard
+  postChannel={postChannel}
+  fileTypes={fileTypes}
+  showComments={showComments}
+  showReportModal={showReportModal}
+  setShowComments={setShowComments}
+  setReportModal={setReportModal}
+  handleDeletePost={handleDeletePost}
+  handleLikePost={handleLikePost}
+/>
+
             ))
         )}
       </div>
@@ -138,7 +157,7 @@ const Home = ({ posts: initialPosts }) => {
             </CardContent>
           </Card>
         ) : (
-          <FriendSuggestions ablyClient={ablyClient} />
+          <FriendSuggestions />
         )}
       </div>
     </div>
